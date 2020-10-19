@@ -13,6 +13,7 @@
         <th>Product Name</th>
         <th>Cost</th>
         <th>Available</th>
+        <th>Edit</th>
         <th>Option</th>
       </tr>
     </thead>
@@ -22,6 +23,7 @@
             <td>{{prod.p_name}}</td>
             <td>{{prod.cost}}</td>
             <td>{{prod.avl_qn}}</td>
+        <td><a href="edit_cost/{{prod.p_name}}" class="btn btn-info pull-right">Edit Cost</a></td>
            
         <td>
             <form action="{{url_for('remove_prod', p_name=prod.p_name)}}" method="POST">

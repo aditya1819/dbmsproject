@@ -24,6 +24,9 @@ class AddNewProd(Form):
 	added = IntegerField('Intital Quantity', [validators.NumberRange(min=1, max=100)])
 	cost = IntegerField('Cost per unit')
 
+class EditCost(Form):
+	cost = IntegerField('Cost per unit')
+
 @app.route('/')
 def index():
 	return render_template('index.html')
@@ -97,6 +100,27 @@ def remove_prod(p_name):
 	mysql.connection.commit()
 	cur.close()
 	return redirect(url_for('inv_det'))
+
+@app.route('/edit_cost/<string:p_name>', methods=['GET', 'POST'])
+def edit_cost(p_name):
+	cur = mysql.connection.cursor()
+	cur.execute("USE project")
+
+	temp = cur.execute("SELECT * FROM products WHERE p_name = %s", [p_name])
+	prods = cur.fetchone()
+
+	form = EditCost(request.form)
+	form.cost.data = prods['cost']
+	cur.close()
+	if request.method == 'POST' and form.validate():
+		cost = request.form['cost']
+		cur = mysql.connection.cursor()
+		cur.execute("USE project")
+		cur.execute("UPDATE products SET cost = %s WHERE p_name=%s", (cost, p_name))
+		mysql.connection.commit()
+		return redirect(url_for('inv_det'))
+
+	return render_template('edit_cost.html', form=form, prods=prods)
 
 if __name__ == "__main__":
 	app.run(debug=True)

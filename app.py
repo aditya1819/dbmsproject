@@ -1,6 +1,7 @@
-from flask import Flask, render_template, redirect,request, url_for
+from flask import Flask, render_template, redirect,request, url_for, flash, session
 from flask_mysqldb import MySQL
 from wtforms import Form, StringField, TextAreaField, PasswordField, validators,SelectField, IntegerField
+from passlib.hash import sha256_crypt
 
 app = Flask(__name__)
 app.secret_key='thisisnotasecretkeycozitsnotsecret'
@@ -26,6 +27,11 @@ class AddNewProd(Form):
 
 class EditCost(Form):
 	cost = IntegerField('Cost per unit')
+
+# class AddEmp(Form):
+# 	u_name = StringField('Username', [validators.Length(min=4, max=30)])
+# 	u_pass = PasswordField('Password', [validators.DataRequired(min=4, max=30)])
+# 	admin_status = 
 
 @app.route('/')
 def index():
@@ -64,14 +70,18 @@ def up_inv():
 		p_name = form.p_name.data
 		added = form.added.data
 		cost = form.cost.data
-		cur.execute("SELECT avl_qn FROM products WHERE p_name= %s", [p_name])
+
+		cur.execute("SELECT p_id FROM products where p_name=%s", [p_name])
+		result = cur.fetchone()
+		p_id = result['p_id']
+		cur.execute("SELECT avl_qn FROM products WHERE p_id=%s", [p_id])
 		avl = cur.fetchone()
 		ans = int(avl['avl_qn']) + int(added)
-		cur.execute('UPDATE products SET avl_qn=%s WHERE p_name=%s', (ans, p_name))
+		cur.execute('UPDATE products SET avl_qn=%s WHERE p_id=%s', (ans, p_id))
 		mysql.connection.commit()
 		
 		if cost != -1:
-			cur.execute('UPDATE products SET cost=%s WHERE p_name=%s', (cost, p_name))
+			cur.execute('UPDATE products SET cost=%s WHERE p_id=%s', (cost, p_id))
 			mysql.connection.commit()
 		cur.close()
 		return redirect(url_for('inv_det'))
@@ -87,8 +97,13 @@ def addprod():
 		cost = form.cost.data
 		cur = mysql.connection.cursor()
 		cur.execute("USE project")
-		cur.execute("INSERT INTO products(p_name, cost, avl_qn) VALUES(%s, %s, %s);", (p_name, cost, added))
-		mysql.connection.commit()
+		try:
+			cur.execute("INSERT INTO products(p_name, cost, avl_qn) VALUES(%s, %s, %s);", (p_name, cost, added))
+			mysql.connection.commit()
+			cur.close()
+		except mysql.connection.IntegrityError:
+			flash('Product already exists with this name', 'danger')
+			return redirect(url_for('addprod'))
 		return redirect(url_for('inv_det'))
 	return render_template('addprod.html', form=form)
 

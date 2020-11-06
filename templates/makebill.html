@@ -1,0 +1,96 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+
+<div class="billwr">
+  Please Dont use 'BACK' key while on this page
+</div>
+
+<hr>
+<h3>ADD PRODUCTS TO CART</h3>
+
+<table class="table table-sm">
+    <!-- <thead class="thead-dark"> -->
+      <tr>
+        <th>Product Name</th>
+        <th>Cost</th>
+        <th>Available</th>
+      </tr>
+    <!-- </thead> -->
+    <tbody>
+        {% for prod in prods %}
+        <tr>
+            <td>{{prod['p_name']}}</td>
+            <td>{{prod.cost}}</td>
+            <td>{{prod.avl_qn}}</td>
+       </tr>
+       {% endfor %}
+
+    </tbody>
+
+  </table>
+  <hr>
+  
+  {% from "_includes/_formhelpers.html" import render_field %}
+
+<form method="POST" action="">
+    <div class="form-group">
+        {{render_field(form.p_name, class_="form-control")}}
+    </div>
+    <div class="form-group">
+        {{render_field(form.added, class_="form-control")}}
+    </div>
+    <p><input type="submit" class="btn btn-primary" value="Add to Cart"></p>
+
+</form>
+
+<hr>
+
+<!-- <a href="/cart_checkout" class="btn btn-primary">CART CHECKOUT</a> -->
+
+<h3>Present Cart</h3>
+
+<table class="table table-sm">
+  <!-- <thead class="thead-dark"> -->
+    <tr>
+      <th>Product Name</th>
+      <th>Quantity</th>
+      <th>Cost per item</th>
+      <th>Product Total Cost</th>
+
+      <!-- <th>Cost</th>
+      <th>Available</th> -->
+    </tr>
+  <!-- </thead> -->
+  <tbody>
+    {% for s in sess %}
+
+      <tr>
+        <th>{{s}}</th>
+        <th>{{sess[s]['a']}}</th>
+        <th>{{sess[s]['c']}}</th>
+        <th>{{sess[s]['t']}}</th>
+      </tr>
+
+    {% endfor %}
+
+  </tbody>
+
+</table>
+
+<hr>
+
+{% if total %}
+
+  <h4>Total Amount : {{total}}</h4>
+{% endif %}
+<hr>
+<a href="/delete_cart" class="btn btn-danger">Delete Cart</a>
+
+<a href="/payment" class="btn btn-success">Confirm Payment</a>
+
+<br>
+<br>
+<hr>
+
+{% endblock %}

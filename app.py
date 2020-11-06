@@ -41,6 +41,14 @@ class AddEmp(Form):
 	# admin_status as 1 is user is admin
 	# admin_status as 0 is user is non admin/employee
 	
+class AddToCart(Form):
+	# cus_name = StringField('Customer Name')
+	p_name = SelectField('Product', choices=[])
+	added = IntegerField('Quantity', [validators.NumberRange(min=1, max=30)])
+	
+class CusName(Form):
+	cusname = StringField('Customer Name', [validators.Length(min=1, max=30)])
+	cusphone = IntegerField("Customer Phone")
 
 # urls
 
@@ -51,83 +59,92 @@ def index():
 # UserLogin
 @app.route('/login', methods=['GET','POST'])
 def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        pass_cand = request.form['password']
+	if request.method == 'POST':
+		username = request.form['username']
+		pass_cand = request.form['password']
 
 # temporary login for admin as 1st user needs to be admin to add other users/employees
-        if username == 'admin' and pass_cand == 'admin':
-            session['logged_in'] = True
-            session['username'] = username
-            session['admin_status'] = True
+		if username == 'admin' and pass_cand == 'admin':
+			session['logged_in'] = True
+			session['username'] = username
+			session['admin_status'] = True
 			# if data['admin_status'] == 1:
-            #     session['admin_status'] = True
-            flash("You are now logged in !",'success')
-            return redirect(url_for('index'))
-        else:
-            error = 'Invalid Login'
-            render_template('login.html', error=error)
+			#     session['admin_status'] = True
+			flash("You are now logged in !",'success')
+			return redirect(url_for('index'))
+		else:
+			error = 'Invalid Login'
+			render_template('login.html', error=error)
 
-        cur = mysql.connection.cursor()
-        cur.execute("USE project")
-        result = cur.execute("SELECT * FROM users WHERE u_name = %s", [username])
+		cur = mysql.connection.cursor()
+		cur.execute("USE project")
+		result = cur.execute("SELECT * FROM users WHERE u_name = %s", [username])
 
-        if result > 0:
-            # get stored hash
-            data = cur.fetchone()
-            password = data['u_pass']
+		if result > 0:
+			# get stored hash
+			data = cur.fetchone()
+			password = data['u_pass']
 
-            # compare pass
-            if sha256_crypt.verify(pass_cand, password):
-                # app.logger.info("PASS MATCHE")
-                session['logged_in'] = True
-                session['username'] = username
-                if data['admin_status'] == 1:
-                    session['admin_status'] = True
-                flash("You are now logged in !",'success')
-                return redirect(url_for('index'))
-            else:
-                # app.logger.info("PASS NOT MATCHED")
-                error = 'Invalid Login Credentials'
-                return render_template('login.html',error=error)
-            cur.close()
-        else:
-            # app.logger.info("NO USER FOUND")
-            error = 'Username not found'
-            return render_template('login.html',error=error)
+			# compare pass
+			if sha256_crypt.verify(pass_cand, password):
+				# app.logger.info("PASS MATCHEd")
+				session['logged_in'] = True
+				session['username'] = username
+				if data['admin_status'] == 1:
+					session['admin_status'] = True
+				elif data['admin_status'] == 0:
+					session['admin_status'] = False
+				flash("You are now logged in !",'success')
+				# print("type(session) : ",type(session))
+				# print("type(session['username'] : ", type(session['username']))
+				# print("session : ", session)
+				session['total'] = 0
+				session['cart'] = {}
+				# print('session cart created')
+				return redirect(url_for('index'))
+			else:
+				# app.logger.info("PASS NOT MATCHED")
+				error = 'Invalid Login Credentials'
+				return render_template('login.html',error=error)
+			cur.close()
+		else:
+			# app.logger.info("NO USER FOUND")
+			error = 'Username not found'
+			return render_template('login.html',error=error)
 
-    return render_template('login.html')
+	return render_template('login.html')
 	
 
 #check if user logged in
 def is_logged_in(f):
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        if 'logged_in' in session:
-            return f(*args, **kwargs)
-        else:
-            flash('Unathorised Access Please Log in','danger')
-            return redirect(url_for('login'))
-    return wrap
+	@wraps(f)
+	def wrap(*args, **kwargs):
+		if 'logged_in' in session:
+			return f(*args, **kwargs)
+		else:
+			flash('Unathorised Access Please Log in','danger')
+			return redirect(url_for('login'))
+	return wrap
 
 # check if user has admin access
 def is_admin(f):
-    @wraps(f)
-    def wrap(*args, **kwargs):
-        if 'admnin_status' in session:
-            return f(*args, **kwargs)
-        else:
-            flash('You need Admin Access for this Operation','danger')
-            return redirect(url_for('login'))
-    return wrap
+	@wraps(f)
+	def wrap(*args, **kwargs):
+		if session['admin_status'] == True:
+			return f(*args, **kwargs)
+		elif session['admin_status'] == False:
+			flash('You need Admin Access for this Operation','danger')
+			# return redirect(url_for('login'))
+			return redirect(url_for('index'))
+	return wrap
 
 #logout
 @app.route('/logout')
 @is_logged_in
 def logout():
-    session.clear()
-    flash('You are Logged Out', 'primary')
-    return redirect(url_for('login'))
+	session.clear()
+	flash('You are Logged Out', 'primary')
+	return redirect(url_for('login'))
 
 @app.route('/inv_det')
 @is_logged_in
@@ -136,7 +153,10 @@ def inv_det():
 		cur = mysql.connection.cursor()
 		cur.execute("USE project")
 		result = cur.execute("SELECT * FROM products")
+		# print(type(result))
 		prods = cur.fetchall()
+		# print(type(prods))
+		# print(prods)
 		if result > 0:
 			return render_template('inv_det.html', prods=prods)
 		# else :
@@ -203,6 +223,7 @@ def addprod():
 	return render_template('addprod.html', form=form)
 
 @app.route('/remove_prod/<string:p_name>', methods=['POST'])
+@is_logged_in
 def remove_prod(p_name):
 	cur = mysql.connection.cursor()
 	cur.execute("USE project")
@@ -212,6 +233,7 @@ def remove_prod(p_name):
 	return redirect(url_for('inv_det'))
 
 @app.route('/edit_cost/<string:p_name>', methods=['GET', 'POST'])
+@is_logged_in
 def edit_cost(p_name):
 	cur = mysql.connection.cursor()
 	cur.execute("USE project")
@@ -233,6 +255,8 @@ def edit_cost(p_name):
 	return render_template('edit_cost.html', form=form, prods=prods)
 
 @app.route('/add_emp', methods=['GET', 'POST'])
+@is_logged_in
+@is_admin
 def add_emp():
 	form = AddEmp(request.form)
 	if request.method == 'POST' and form.validate():
@@ -243,7 +267,7 @@ def add_emp():
 			admin_status = 1
 		else:
 			admin_status = 0
-		print('admin_status : ', admin_status )
+		# print('admin_status : ', admin_status )
 		cur = mysql.connection.cursor()
 		cur.execute("USE project")
 		try:
@@ -255,6 +279,133 @@ def add_emp():
 			redirect(url_for('add_emp'))
 		return redirect(url_for('index'))
 	return render_template('add_emp.html', form=form)
+
+# billing system code
+#  |
+#  V
+
+@app.route('/makebill', methods=['GET', 'POST'])
+@is_logged_in
+def makebill():
+	# try:
+	cur = mysql.connection.cursor()
+	cur.execute("USE project")
+	# print('here')
+	cur.execute("INSERT INTO cart_tt(cart_status, u_name) VALUES ('A', %s)", [session['username']])
+	mysql.connection.commit()
+	result = cur.execute("SELECT * FROM products")
+	prods = cur.fetchall()
+	# render_template('makebill.html', prods=prods, form=form)
+
+	# 	# cur.execute("SELECT cart_id FROM cart_tt WHERE u_name=%s", [session['username']])
+	# 	# temp = cur.fetchone()
+	# 	# session['cart_id'] = temp['cart_id']
+
+	# except Exception as e:
+	# 	print(e)
+
+	form = AddToCart(request.form)
+	form.p_name.choices = [x['p_name'] for x in prods]
+	if request.method == 'POST' and form.validate():
+		p_name = form.p_name.data
+		added = form.added.data
+		cur.execute("SELECT * FROM products WHERE p_name=%s", [p_name])
+		temp = cur.fetchone()
+		p_id = int(temp['p_id'])
+
+		# cur.execute("SELECT avl_qn FROM products WHERE p_id=%s", [p_id])
+		# temp = cur.fetchone()
+		avl_qn = int(temp['avl_qn'])
+		cost = int(temp['cost'])
+		if int(added) > int(avl_qn) :
+			flash('REQ QUANTITY NOT AVAILABLE', 'danger')
+			return redirect(url_for('makebill'))
+		cur.execute("UPDATE products SET avl_qn=%s WHERE p_id=%s", ((avl_qn-added),p_id))
+		mysql.connection.commit()
+		cur.close()
+		t_cost = added * cost
+		if p_name not in session['cart']:
+			session['cart'][p_name] = {'a': 0, 'c': cost,'t': 0}
+		# print(session)
+		
+		# if session['cart'][p_name]:
+		session['cart'][p_name]['a'] += added
+		session['cart'][p_name]['t'] += t_cost
+		session['total'] += t_cost
+		# print('in if')
+		# else:
+		# 	session['cart'][p_name]['a'] = added
+		# 	session['cart'][p_name]['c'] = cost
+		# 	session['cart'][p_name]['t'] = t_cost
+
+
+		flash('Item added to cart', 'success')
+		# print(session)
+		# print(session['cart'][str(p_name)])
+		# dcart = {}
+
+		return redirect('makebill')
+		# render_template('makebill.html', prods=prods, form=form)
+
+	# form2 = CusName(request.form)
+	# if request.method == 'POST' and form2.validate():
+	# 	cusname = form2.cusname.data
+	# 	cusphone = form2.cusphone.data
+	# 	return redirect()
+
+
+	return render_template('makebill.html', prods=prods, form=form, sess=session['cart'], total=session['total'])
+
+def reset_cart():
+	session['cart'] = {}
+	session['total'] = 0
+
+@app.route('/delete_cart')
+def delete_cart():
+	cur = mysql.connection.cursor()
+	cur.execute("USE project")
+	for a in session['cart']:
+		# print(a)
+		# print(session['cart'][a]['a'])
+		cur.execute("SELECT avl_qn FROM products WHERE p_name=%s", [a])
+		temp = cur.fetchone()
+		avl_qn = int(temp['avl_qn'])
+		cur.execute("UPDATE products SET avl_qn=%s WHERE p_name=%s", ((avl_qn+session['cart'][a]['a']),a))
+		mysql.connection.commit()
+	reset_cart()
+	flash('Transaction cancelled', 'danger')
+	return redirect('/')
+
+@app.route('/payment', methods=['GET', 'POST'])
+def payment():
+	cur = mysql.connection.cursor()
+
+	form = CusName(request.form)
+	if request.method == 'POST' and form.validate():
+		cusname = form.cusname.data
+		cusphone = form.cusphone.data
+		cur.execute('USE project')
+		cur.execute("INSERT into t_hist(cusname, cusphone, total_cost, sold_by) VALUES (%s, %s, %s, %s)", (cusname, cusphone, session['total'], session['username']))
+		mysql.connection.commit()
+		cur.close()
+		reset_cart()
+
+		# print(session)
+
+		flash('transaction complete', 'success')
+		return redirect('/')
+	return render_template('payment.html', form=form)
+
+
+# @app.route('/cart_checkout', methods=['GET', 'POST'])
+# def cart_checkout():
+# 	cur = mysql.connection.cursor()
+# 	cur.execute("USE project")
+# 	cur.execute("SELECT * FROM in_cart WHERE cart_id=%s", [session['cart_id']])
+# 	temp = cur.fetchall()
+# 	for i in temp:
+# 		for x in i['p_id']:
+# 			pass
 
 
 if __name__ == "__main__":

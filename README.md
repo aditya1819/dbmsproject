@@ -19,3 +19,5 @@ app.config['MYSQL_USER'] = 'Your Database Username here'
 app.config['MYSQL_PASSWORD'] = 'Your Database Password here'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 ```
+
+### edited by ranjeet

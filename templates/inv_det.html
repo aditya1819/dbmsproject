@@ -13,7 +13,8 @@
         <th>Product Name</th>
         <th>Cost</th>
         <th>Available</th>
-        <th>Edit</th>
+        <th>Edit Cost</th>
+        <th>Edit Quantity</th>
         <th>Option</th>
       </tr>
     </thead>
@@ -23,14 +24,15 @@
             <td>{{prod.p_name}}</td>
             <td>{{prod.cost}}</td>
             <td>{{prod.avl_qn}}</td>
-        <td><a href="edit_cost/{{prod.p_name}}" class="btn btn-info pull-right">Edit Cost</a></td>
+          <td><a href="edit_cost/{{prod.p_name}}" class="btn btn-info pull-right">Edit Cost</a></td>
+          <td><a href="edit_quantity/{{prod.p_name}}" class="btn btn-info pull-right">Edit Quantity</a></td>
            
-        <td>
-            <form action="{{url_for('remove_prod', p_name=prod.p_name)}}" method="POST">
-            <input type="hidden" name="_method" value="DELETE">
-            <input type="submit" value="Delete" class="btn btn-danger">
-            </form>
-        </td>
+          <td>
+              <form action="{{url_for('remove_prod', p_name=prod.p_name)}}" method="POST">
+              <input type="hidden" name="_method" value="DELETE">
+              <input type="submit" value="Delete" class="btn btn-danger">
+              </form>
+          </td>
        </tr>
        {% endfor %}
 
@@ -38,7 +40,7 @@
 
   </table>
   <hr><hr>
-  <a href="/up_inv" class="btn btn-outline-primary">Add Products to Inventory</a>
+  <!-- <a href="/up_inv" class="btn btn-outline-primary">Add Products to Inventory</a> -->
   <hr>
   <a href="/addprod" class="btn btn-outline-success">Add New Product</a>
 {% endblock %}

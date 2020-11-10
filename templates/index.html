@@ -3,47 +3,48 @@
 {% block body %}
 
 <!-- <h2>hello from index page</h2> -->
-<br><hr><br>
-<div class="row">
-    <div class="col-sm-4">
-        <div class="card bg-dark text-white">
+  <br><hr><br>
+  <div class="row">
+      <div class="col-sm-4">
+          <div class="card bg-dark text-white">
+            <div class="card-body">
+              <h4 class="card-title">INVENTORY DETAILS</h4>
+              <p class="card-text"><ul>
+                  <li>Update Inventory</li>
+                  <li>Check Products Quantity</li>
+                  <li>See all products</li>
+              </ul></p>
+              <a href="/inv_det" class="btn btn-success">PROCEED</a>
+            </div>
+          </div>
+        </div>
+      <div class="col-sm-4">
+        <div class="card bg-dark text-white ">
           <div class="card-body">
-            <h4 class="card-title">INVENTORY DETAILS</h4>
+            <h4 class="card-title">MAKE NEW BILLS</h4>
             <p class="card-text"><ul>
-                <li>Update Inventory</li>
-                <li>Check Products Quantity</li>
-                <li>See all products</li>
+                <li>Sell Product</li>
+                <li>Auto-update inventory</li>
+                <br>
             </ul></p>
-            <a href="/inv_det" class="btn btn-primary">PROCEED</a>
+            <a href="/makebill" class="btn btn-success">PROCEED</a>
           </div>
         </div>
       </div>
-    <div class="col-sm-4">
-      <div class="card bg-dark text-white">
-        <div class="card-body">
-          <h4 class="card-title">MAKE NEW BILLS</h4>
-          <p class="card-text"><ul>
-              <li>Sell Product</li>
-              <li>Auto-update inventory</li>
-          </ul></p>
-          <a href="/makebill" class="btn btn-success">PROCEED</a>
+      <div class="col-sm-4">
+          <div class="card bg-dark text-white">
+            <div class="card-body">
+              <h4 class="card-title">RECORD GENERATION</h4>
+              <p class="card-text"><ul>
+                  <li>Products sold Stats</li>
+                  <li>Profit/Loss estimate</li>
+                  <li>Previous Transactions</li>
+              </ul></p>
+              <a href="/rec_genrate" class="btn btn-success">PROCEED</a>
+            </div>
+          </div>
         </div>
-      </div>
     </div>
-    <div class="col-sm-4">
-        <div class="card bg-dark text-white">
-          <div class="card-body">
-            <h4 class="card-title">RECORD GENERATION</h4>
-            <p class="card-text"><ul>
-                <li>Products sold Stats</li>
-                <li>Profit/Loss estimate</li>
-                <li>Previous Transactions</li>
-            </ul></p>
-            <a href="#" class="btn btn-warning">PROCEED</a>
-          </div>
-        </div>
-      </div>
-   </div>
 
-<br><hr><br>
+  <br><hr><br>
 {% endblock %}

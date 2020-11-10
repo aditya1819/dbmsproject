@@ -13,6 +13,7 @@ app.secret_key='thisisnotasecretkeycozitsnotsecret'
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'pass'
+app.config['MYSQL_DB'] = 'project'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
@@ -77,7 +78,6 @@ def login():
 			render_template('login.html', error=error)
 
 		cur = mysql.connection.cursor()
-		cur.execute("USE project")
 		result = cur.execute("SELECT * FROM users WHERE u_name = %s", [username])
 
 		if result > 0:
@@ -151,17 +151,10 @@ def logout():
 def inv_det():
 	try:
 		cur = mysql.connection.cursor()
-		cur.execute("USE project")
 		result = cur.execute("SELECT * FROM products")
-		# print(type(result))
 		prods = cur.fetchall()
-		# print(type(prods))
-		# print(prods)
 		if result > 0:
 			return render_template('inv_det.html', prods=prods)
-		# else :
-		#     msg = "No Products found"
-		#     return render_template('inv_det.html', msg = msg)
 		cur.close()
 	except Exception as e:
 		print(e)
@@ -172,7 +165,6 @@ def inv_det():
 def up_inv():
 
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 	result = cur.execute("SELECT * FROM products")
 	prods = cur.fetchall()
 
@@ -199,7 +191,6 @@ def up_inv():
 		cur.close()
 		flash('Product Details Updated', 'success')
 		return redirect(url_for('inv_det'))
-		# if form.cost.data:
 	return render_template('up_inv.html', form=form)
 
 @app.route('/addprod', methods=['GET', 'POST'])
@@ -211,7 +202,6 @@ def addprod():
 		added = form.added.data
 		cost = form.cost.data
 		cur = mysql.connection.cursor()
-		cur.execute("USE project")
 		try:
 			cur.execute("INSERT INTO products(p_name, cost, avl_qn) VALUES(%s, %s, %s);", (p_name, cost, added))
 			mysql.connection.commit()
@@ -226,7 +216,6 @@ def addprod():
 @is_logged_in
 def remove_prod(p_name):
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 	cur.execute("DELETE FROM products WHERE p_name=%s", [p_name])
 	mysql.connection.commit()
 	cur.close()
@@ -236,7 +225,6 @@ def remove_prod(p_name):
 @is_logged_in
 def edit_cost(p_name):
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 
 	temp = cur.execute("SELECT * FROM products WHERE p_name = %s", [p_name])
 	prods = cur.fetchone()
@@ -247,7 +235,6 @@ def edit_cost(p_name):
 	if request.method == 'POST' and form.validate():
 		cost = request.form['cost']
 		cur = mysql.connection.cursor()
-		cur.execute("USE project")
 		cur.execute("UPDATE products SET cost = %s WHERE p_name=%s", (cost, p_name))
 		mysql.connection.commit()
 		return redirect(url_for('inv_det'))
@@ -267,9 +254,7 @@ def add_emp():
 			admin_status = 1
 		else:
 			admin_status = 0
-		# print('admin_status : ', admin_status )
 		cur = mysql.connection.cursor()
-		cur.execute("USE project")
 		try:
 			cur.execute('INSERT INTO users(u_name, u_pass, admin_status) VALUES (%s, %s, %s);', (u_name, u_pass, admin_status))
 			mysql.connection.commit()
@@ -289,20 +274,9 @@ def add_emp():
 def makebill():
 	# try:
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
-	# print('here')
-	cur.execute("INSERT INTO cart_tt(cart_status, u_name) VALUES ('A', %s)", [session['username']])
-	mysql.connection.commit()
 	result = cur.execute("SELECT * FROM products")
 	prods = cur.fetchall()
-	# render_template('makebill.html', prods=prods, form=form)
-
-	# 	# cur.execute("SELECT cart_id FROM cart_tt WHERE u_name=%s", [session['username']])
-	# 	# temp = cur.fetchone()
-	# 	# session['cart_id'] = temp['cart_id']
-
-	# except Exception as e:
-	# 	print(e)
+	
 
 	form = AddToCart(request.form)
 	form.p_name.choices = [x['p_name'] for x in prods]
@@ -313,8 +287,6 @@ def makebill():
 		temp = cur.fetchone()
 		p_id = int(temp['p_id'])
 
-		# cur.execute("SELECT avl_qn FROM products WHERE p_id=%s", [p_id])
-		# temp = cur.fetchone()
 		avl_qn = int(temp['avl_qn'])
 		cost = int(temp['cost'])
 		if int(added) > int(avl_qn) :
@@ -326,33 +298,16 @@ def makebill():
 		t_cost = added * cost
 		if p_name not in session['cart']:
 			session['cart'][p_name] = {'a': 0, 'c': cost,'t': 0}
-		# print(session)
-		
-		# if session['cart'][p_name]:
+		print(session)
+
 		session['cart'][p_name]['a'] += added
 		session['cart'][p_name]['t'] += t_cost
 		session['total'] += t_cost
-		# print('in if')
-		# else:
-		# 	session['cart'][p_name]['a'] = added
-		# 	session['cart'][p_name]['c'] = cost
-		# 	session['cart'][p_name]['t'] = t_cost
-
+		print(session)
 
 		flash('Item added to cart', 'success')
-		# print(session)
-		# print(session['cart'][str(p_name)])
-		# dcart = {}
 
 		return redirect('makebill')
-		# render_template('makebill.html', prods=prods, form=form)
-
-	# form2 = CusName(request.form)
-	# if request.method == 'POST' and form2.validate():
-	# 	cusname = form2.cusname.data
-	# 	cusphone = form2.cusphone.data
-	# 	return redirect()
-
 
 	return render_template('makebill.html', prods=prods, form=form, sess=session['cart'], total=session['total'])
 
@@ -363,15 +318,13 @@ def reset_cart():
 @app.route('/delete_cart')
 def delete_cart():
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 	for a in session['cart']:
-		# print(a)
-		# print(session['cart'][a]['a'])
 		cur.execute("SELECT avl_qn FROM products WHERE p_name=%s", [a])
 		temp = cur.fetchone()
 		avl_qn = int(temp['avl_qn'])
 		cur.execute("UPDATE products SET avl_qn=%s WHERE p_name=%s", ((avl_qn+session['cart'][a]['a']),a))
 		mysql.connection.commit()
+	cur.close()
 	reset_cart()
 	flash('Transaction cancelled', 'danger')
 	return redirect('/')
@@ -384,28 +337,15 @@ def payment():
 	if request.method == 'POST' and form.validate():
 		cusname = form.cusname.data
 		cusphone = form.cusphone.data
-		cur.execute('USE project')
 		cur.execute("INSERT into t_hist(cusname, cusphone, total_cost, sold_by) VALUES (%s, %s, %s, %s)", (cusname, cusphone, session['total'], session['username']))
 		mysql.connection.commit()
 		cur.close()
 		reset_cart()
-
 		# print(session)
-
 		flash('transaction complete', 'success')
 		return redirect('/')
 	return render_template('payment.html', form=form)
 
-
-# @app.route('/cart_checkout', methods=['GET', 'POST'])
-# def cart_checkout():
-# 	cur = mysql.connection.cursor()
-# 	cur.execute("USE project")
-# 	cur.execute("SELECT * FROM in_cart WHERE cart_id=%s", [session['cart_id']])
-# 	temp = cur.fetchall()
-# 	for i in temp:
-# 		for x in i['p_id']:
-# 			pass
 
 
 if __name__ == "__main__":

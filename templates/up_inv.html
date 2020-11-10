@@ -6,6 +6,9 @@
 <hr>
 {% from "_includes/_formhelpers.html" import render_field %}
 
+
+<h4>{{prods.p_name}}</h4>
+
 <form method="POST" action="">
     <div class="form-group">
         {{render_field(form.p_name, class_="form-control")}}

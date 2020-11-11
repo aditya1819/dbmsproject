@@ -7,6 +7,8 @@ from functools import wraps
 from datetime import date
 import pygal
 from forms import *
+from dbconnet import dbconnect
+
 
 app = Flask(__name__)
 app.secret_key='thisisnotasecretkeycozitsnotsecret'
@@ -14,8 +16,8 @@ app.secret_key='thisisnotasecretkeycozitsnotsecret'
 # mysql config
 
 app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'pass'
+app.config['MYSQL_USER'] = dbconnect.user
+app.config['MYSQL_PASSWORD'] = dbconnect.passwd
 app.config['MYSQL_DB'] = 'project'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 

@@ -5,7 +5,6 @@ from wtforms.fields.html5 import DateField
 from passlib.hash import sha256_crypt
 from functools import wraps
 
-
 app = Flask(__name__)
 app.secret_key='thisisnotasecretkeycozitsnotsecret'
 
@@ -13,7 +12,8 @@ app.secret_key='thisisnotasecretkeycozitsnotsecret'
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'Ranjeet@496K'
+app.config['MYSQL_PASSWORD'] = 'pass'
+app.config['MYSQL_DB'] = 'project'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
@@ -160,10 +160,7 @@ def inv_det():
 		cur = mysql.connection.cursor()
 		cur.execute("USE project")
 		result = cur.execute("SELECT * FROM products")
-		# print(type(result))
 		prods = cur.fetchall()
-		# print(type(prods))
-		# print(prods)
 		if result > 0:
 			return render_template('inv_det.html', prods=prods)
 		cur.close()
@@ -262,7 +259,6 @@ def add_emp():
 			admin_status = 1
 		else:
 			admin_status = 0
-		# print('admin_status : ', admin_status )
 		cur = mysql.connection.cursor()
 		cur.execute("USE project")
 		try:
@@ -325,8 +321,6 @@ def delete_cart():
 	cur = mysql.connection.cursor()
 	cur.execute("USE project")
 	for key in session['cart']:
-		# print(a)
-		# print(session['cart'][a]['a'])
 		cur.execute("SELECT avl_qn FROM products WHERE p_name=%s", [key])
 		temp = cur.fetchone()
 		avl_qn = int(temp['avl_qn'])
@@ -371,8 +365,6 @@ def payment():
 			cur.close()
 			reset_cart()
 
-				# print(session)
-
 			flash('transaction complete', 'success')
 			return redirect('/')
 		return render_template('payment.html', form=form)
@@ -400,14 +392,16 @@ def rec_genrate():
 @is_logged_in
 def date():
 	form = DateInterval(request.form)
-	print(request.method == "POST")
-	if request.method == "POST":
+	# print(request.method == "POST")
+	if request.method == 'POST':
 		date1 = form.date1.data
 		date2 = form.date2.data
-		return render_template('date.html',form=form)
-	else:
-		print("fdff")
-		return redirect("/")
+		# return render_template('date.html',form=form)
+		print('ok')
+	# else:
+
+	# 	print("fdff")
+	# 	return redirect("/")
 	return render_template('date.html',form=form)
 
 if __name__ == "__main__":

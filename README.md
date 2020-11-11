@@ -3,7 +3,10 @@
 Using HTML ,CSS ,Bootstrap on Frontend and Python Web-framework Flask along with MySQL database
 
 1. Install python modules ( use pip3 for linux )
+```bash
+pip install mysqlclient-1.4.6-cp38-cp38-win32.whl
 ```
+```linux
 pip install -r requirements.txt
 ```
 
@@ -14,10 +17,9 @@ mysql -u yourUserName -p project < dbinit.sql
 
 3. Change the username and password in dbinit.py to your local system MySQL username and password in app.py
 ```python
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'Your Database Username here'
-app.config['MYSQL_PASSWORD'] = 'Your Database Password here'
-app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+class dbconnect():
+    host = 'localhost'
+    user = 'root'     # mysql db username
+    passwd = 'pass'   # mysql db password
+    cursorclass = 'DictCursor'
 ```
-
-### edited by ranjeet

@@ -4,6 +4,9 @@ from wtforms import Form, StringField, TextAreaField, PasswordField, validators,
 from wtforms.fields.html5 import DateField
 from passlib.hash import sha256_crypt
 from functools import wraps
+from datetime import date
+import pygal
+
 
 app = Flask(__name__)
 app.secret_key='thisisnotasecretkeycozitsnotsecret'
@@ -12,7 +15,7 @@ app.secret_key='thisisnotasecretkeycozitsnotsecret'
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'pass'
+app.config['MYSQL_PASSWORD'] = 'Ranjeet@496K'
 app.config['MYSQL_DB'] = 'project'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
@@ -49,25 +52,70 @@ class AddToCart(Form):
 class CusName(Form):
 	cusname = StringField('Customer Name', [validators.Length(min=1, max=30)])
 	cusphone = IntegerField("Customer Phone")
+	b_date = DateField("Date",format="%Y-%m-%d")
 
 class RecordGenration(Form):
-	rec_type = SelectField("Type",choices = ['Date_Inteval','Date_to_days','all_month'])
-	rec_type1 = SelectField("type1", choices = ['All','product'])
+	rec_type = SelectField("Type",choices = ['Date_Interval','Date_to_Days','All_Month'])
+	rec_type1 = SelectField("type1", choices = ['All','Product'])
 
 
 class DateInterval(Form):
-	date1 = DateField("start Date",format="%Y-%m-%d")
-	date2 = DateField("end Date",format="%Y-%m-%d")
+	date1 = DateField("Start Date",format="%Y-%m-%d")
+	date2 = DateField("End Date",format="%Y-%m-%d")
 
-class DayIntervak(Form):
-	date = DateField("start Date",formate="%Y-%m-%d")
+class DayInterval(Form):
+	date = DateField("Start Date",format="%Y-%m-%d")
 	days = IntegerField("Days",[validators.NumberRange(min=1, max=30)])
+
+class DateIntervalP(Form):
+	date1 = DateField("Start Date",format="%Y-%m-%d")
+	date2 = DateField("End Date",format="%Y-%m-%d")
+	prod  = SelectField("Product", choices=[])
+
+class DayIntervalP(Form):
+	date = DateField("Start Date",format="%Y-%m-%d")
+	days = IntegerField("Days",[validators.NumberRange(min=1, max=30)])
+	prod  = SelectField("Product", choices=[])
+
+class Month(Form):
+	year = IntegerField("Year",[validators.NumberRange(min=2010, max=2020)])
+
+class MonthP(Form):
+	year = IntegerField("Year",[validators.NumberRange(min=2010, max=2020)])
+	prod  = SelectField("Product", choices=[])
+
 
 # urls
 
-@app.route('/')
+@app.route('/', methods=["POST",'GET'])
 def index():
+	# cur = mysql.connection.cursor()
+	# result = cur.execute("select * from users where admin_status=1")
+	# cur.close()
+	# if result > 0 :
+	# 	print("rrrrrr")
 	return render_template('index.html')
+	# else:
+	# 	print("else")
+	# 	return render_template("admin_login.html")
+	
+
+# @app.route('/admin_login', methods=['GET','POST'])
+# def admin_login():
+# 	print("ssssssss")
+# 	if request.method == 'POST':
+# 		username = request.form['username']
+# 		pass_cand = request.form['password']
+# 		u_pass = sha256_crypt.hash(str(pass_cand))
+# 		cur = mysql.connection.cursor()
+# 		print("admin")
+# 		cur.execute("insert into users(u_name,u_pass,admin_status) values(%s,%s,%s)",(username,u_pass,1))
+# 		session['logged_in'] = True
+# 		session['username'] = username
+# 		session['admin_status'] =  True
+# 		reset_cart()
+# 		flash("You are now logged in as Admin !",'success')
+# 		return redirect(url_for('index'))
 
 # UserLogin
 @app.route('/login', methods=['GET','POST'])
@@ -338,6 +386,7 @@ def payment():
 		if request.method == 'POST' and form.validate():
 			cusname = form.cusname.data
 			cusphone = form.cusphone.data
+			b_date = form.b_date.data
 			cur.execute('USE project')
 			result = cur.execute("select * from customer where c_name = %s and c_contact = %s",(cusname,cusphone))
 			if result > 0:
@@ -353,14 +402,14 @@ def payment():
 			result = cur.execute("select * from users where u_name = %s",[session['username']])
 			data = cur.fetchone()
 			emp_id=data['u_id']
-			cur.execute("insert into t_hist(c_id,emp_id,total) values(%s,%s,%s)",(c_id,emp_id,[session['total']]))
+			cur.execute("insert into t_hist(c_id,emp_id,total,ddtt) values(%s,%s,%s,%s)",(c_id,emp_id,[session['total']],b_date))
 			mysql.connection.commit()
 
 			result = cur.execute("select * from t_hist order by id DESC limit 1")
 			data = cur.fetchone()
 			id = data['id']
 			for key in session['cart']:
-				cur.execute("insert into record(id,p_id,cost,qunt) values(%s,%s,%s,%s)",(id,[session['cart'][key]['p_id']],[session['cart'][key]['c']],[session['cart'][key]['a']]))
+				cur.execute("insert into record(id,p_id,cost,qunt,ddmm) values(%s,%s,%s,%s,%s)",(id,[session['cart'][key]['p_id']],[session['cart'][key]['c']],[session['cart'][key]['a']],b_date))
 				mysql.connection.commit() 
 			cur.close()
 			reset_cart()
@@ -382,27 +431,198 @@ def rec_genrate():
 	if request.method == 'POST': 
 		rec_type= form.rec_type.data
 		rec_type1 = form.rec_type1.data 	
-		if rec_type== 'Date_Inteval':
-			if rec_type1 == "All":
+		if rec_type1 == "All":
+			if rec_type == "Date_Interval":
 				return redirect("date")
+			elif rec_type == "Date_to_Days":
+				return redirect("days")
+			else:
+				return redirect("month") 
+		else:
+			cur = mysql.connection.cursor()
+			cur.execute("USE project")
+			result = cur.execute("SELECT * FROM products")
+			prods = cur.fetchall()
+			if rec_type == "Date_Interval":
+				return redirect("datep")
+			elif rec_type == "Date_to_Days":
+				return redirect("daysp")
+			else:
+				return redirect("monthp")
+
 	return render_template('rec_genrate.html',form=form )
 
 
-@app.route('/date', methods=['GET','POST'])
+@app.route('/dates', methods=['GET','POST'])
 @is_logged_in
-def date():
+def dates():
 	form = DateInterval(request.form)
-	# print(request.method == "POST")
 	if request.method == 'POST':
 		date1 = form.date1.data
 		date2 = form.date2.data
-		# return render_template('date.html',form=form)
-		print('ok')
-	# else:
+		# year = date.today().year
+		cur = mysql.connection.cursor()
+		result = cur.execute("select sum(total) as total , date(ddtt) dd from t_hist where date(ddtt) between %s and %s group by date(ddtt)",(date1,date2))
+		data = cur.fetchall() 
+		cur.close()		
+		print("qunt" in data)
+		print()
+		dates= [x['dd'] for x in data]
+		total = [x['total'] for x in data]
+		line_chart = pygal.Bar()
+		line_chart.title = 'form '+str(date1)+'to'+str(date2)+"sell"
+		line_chart.x_labels = map(str, dates)
+		line_chart.add("Total",total)
+		line_chart.render()
+		chart = line_chart.render_data_uri()
+		return render_template( 'charts2.html', chart = chart,data=data,typ="Date TO Date" )
+	return render_template('dates.html',form=form)
 
-	# 	print("fdff")
-	# 	return redirect("/")
-	return render_template('date.html',form=form)
+
+
+@app.route('/days', methods=['GET','POST'])
+@is_logged_in
+def days():
+	form = DayInterval(request.form)
+	if request.method == 'POST':
+		date = form.date.data
+		days = form.days.data
+		cur = mysql.connection.cursor()
+		resurl = cur.execute("select sum(total) as total , date(ddtt) as dd from t_hist where date(ddtt) between %s and date_add(%s, interval %s day) group by date(ddtt)",(date,date,days))
+		data = cur.fetchall()
+		cur.close()
+		dates = [x['dd'] for x in data]
+		total = [x['total'] for x in data]
+		line_chart = pygal.Bar()
+		line_chart.title = "from "+str(date)+" to "+str(days)+' days sell'
+		line_chart.x_labels = map(str, dates)
+		line_chart.add("Total",total)
+		line_chart.render()
+		chart = line_chart.render_data_uri()
+		return render_template( 'charts2.html', chart = chart,data=data,typ="Days" )
+	return render_template('days.html',form=form)
+
+@app.route('/month',methods=["POST","GET"] )
+@is_logged_in
+def month():
+	form = Month(request.form)
+	if request.method == 'POST':
+		year = form.year.data
+		cur = mysql.connection.cursor()
+		resurl = cur.execute("select sum(total) as total , month(ddtt) as dd from t_hist where year(ddtt) = %s group by month(ddtt)",year)
+		data = cur.fetchall()
+		cur.close()
+		dates = [x['dd'] for x in data]
+		total = [x['total'] for x in data]
+		line_chart = pygal.Bar()
+		line_chart.title = 'month wise sell of all Product' 
+		line_chart.x_labels = map(str, dates)
+		line_chart.add("Total",total)
+		line_chart.render()
+		chart = line_chart.render_data_uri()
+		return render_template( 'charts2.html', chart = chart,data=data,typ = "MONTH " )
+	return render_template('month.html',form=form)
+
+
+
+@app.route('/datep', methods=['GET','POST'])
+@is_logged_in
+def datep():
+	form = DateIntervalP(request.form)
+	cur = mysql.connection.cursor()
+	cur.execute("USE project")
+	result = cur.execute("SELECT * FROM products")
+	prods = cur.fetchall()
+	form.prod.choices = [x['p_name'] for x in prods]
+	if request.method == 'POST':
+		date1 = form.date1.data
+		date2 = form.date2.data
+		prod = form.prod.data
+		result = cur.execute("select * from products where p_name = %s",[prod])
+		data = cur.fetchone()
+		p_id = data['p_id']
+		result = cur.execute("select sum(qunt*cost) as total,sum(qunt) as qunt , date(ddmm) as dd from record where date(ddmm) between %s and %s  and p_id= %s group by date(ddmm)",(date1,date2,[p_id]))
+		data = cur.fetchall()
+		cur.close()
+		total = [x['total'] for x in data]
+		qunt = [x['qunt'] for x in data]
+		dates= [x['dd'] for x in data]
+		line_chart = pygal.Bar()
+		line_chart.title = 'form '+str(date1)+'to'+str(date2)+"sell of "+str(prod)
+		line_chart.x_labels = map(str, dates)
+		line_chart.add("Total",total)
+		line_chart.add("qunt",qunt)
+		line_chart.render()
+		chart = line_chart.render_data_uri()
+		return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(), typ="Date To Date")
+	return render_template('datep.html',form=form)
+
+
+
+@app.route('/daysp', methods=['GET','POST'])
+@is_logged_in
+def daysp():
+	form = DayIntervalP(request.form)
+	cur = mysql.connection.cursor()
+	cur.execute("USE project")
+	result = cur.execute("SELECT * FROM products")
+	prods = cur.fetchall()
+	form.prod.choices = [x['p_name'] for x in prods]
+	if request.method == 'POST':
+		date = form.date.data
+		days = form.days.data
+		prod = form.prod.data
+		result = cur.execute("select * from products where p_name = %s",[prod])
+		data = cur.fetchone()
+		p_id = data['p_id']
+		result = cur.execute("select sum(qunt*cost) as total,sum(qunt) as qunt , month(ddmm) as dd from record where date(ddmm) between %s and date_add(%s, interval %s day)  and p_id=%s  group by date(ddmm)",(date,date,days,[p_id]))
+		data = cur.fetchall()
+		cur.close()
+		total = [x['total'] for x in data]
+		qunt = [x['qunt'] for x in data]
+		dates = [x['dd'] for x in data]
+		line_chart = pygal.Bar()
+		line_chart.title = "from"+str(date)+"to"+str(days)+'days sell of '+str(prod)
+		line_chart.x_labels = map(str, dates)
+		line_chart.add("Total",total)
+		line_chart.add("qunt",qunt)
+		line_chart.render()
+		chart = line_chart.render_data_uri()
+		return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(),typ="days")
+	return render_template('daysp.html',form=form)
+
+@app.route('/monthp', methods=["POST","GET"])
+@is_logged_in
+def monthp():
+	form = MonthP(request.form)
+	cur = mysql.connection.cursor()
+	cur.execute("USE project")
+	result = cur.execute("SELECT * FROM products")
+	prods = cur.fetchall()
+	form.prod.choices = [x['p_name'] for x in prods]
+	if request.method == 'POST':
+		prod = form.prod.data
+		year = form.year.data
+		result = cur.execute("select * from products where p_name = %s",[prod])
+		data = cur.fetchone()
+		p_id = data['p_id']
+		result = cur.execute("select sum(qunt*cost) as total,sum(qunt) as qunt , month(ddmm) as dd from record where year(ddmm)=%s  and p_id= %s group by date(ddmm)",(year,[p_id]))
+		data = cur.fetchall()
+		cur.close()
+		total = [x['total'] for x in data]
+		qunt = [x['qunt'] for x in data]
+		dates = [x['dd'] for x in data]
+		line_chart = pygal.Bar()
+		line_chart.title = 'month wise sell of'+ str(prod)
+		line_chart.x_labels = map(str, dates)
+		line_chart.add("Total",total)
+		line_chart.add("qunt",qunt)
+		line_chart.render()
+		chart = line_chart.render_data_uri()
+		return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(),typ = "MONTH")
+	return render_template('monthp.html',form=form)
+
+
 
 if __name__ == "__main__":
 	app.run(debug=True)

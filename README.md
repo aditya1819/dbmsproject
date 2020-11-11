@@ -21,3 +21,6 @@ class dbconnect():
     user = 'root'     # mysql db username
     passwd = 'pass'   # mysql db password
 ```
+
+![Screenshot from 2020-11-12 00-29-59](https://user-images.githubusercontent.com/57535120/98852888-5d04b180-247e-11eb-931b-feb7b1e1703e.png)
+

@@ -6,7 +6,7 @@ from passlib.hash import sha256_crypt
 from functools import wraps
 from datetime import date
 import pygal
-
+from forms import *
 
 app = Flask(__name__)
 app.secret_key='thisisnotasecretkeycozitsnotsecret'
@@ -15,107 +15,12 @@ app.secret_key='thisisnotasecretkeycozitsnotsecret'
 
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'Ranjeet@496K'
+app.config['MYSQL_PASSWORD'] = 'pass'
 app.config['MYSQL_DB'] = 'project'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 
 mysql = MySQL(app)
 
-# forms used
-
-class AddNewProd(Form):
-	p_name = StringField('Product Name', [validators.Length(min=4, max=30)])
-	added = IntegerField('Intital Quantity', [validators.NumberRange(min=1, max=100)])
-	cost = IntegerField('Cost per unit')
-
-class EditCost(Form):
-	cost = IntegerField('Cost per unit')
-
-class EditQuantity(Form):
-	quantity = IntegerField('Original quantity')
-	no_products = IntegerField("Add new quantity")
-
-class AddEmp(Form):
-	u_name = StringField('Username', [validators.Length(min=4, max=30)])
-	u_pass = PasswordField('Password', [validators.DataRequired()])
-	u_type = SelectField('Access Type', choices=['Admin', 'Non-Admin'])
-
-	# u_type is admin_status in database 
-	# admin_status as 1 is user is admin
-	# admin_status as 0 is user is non admin/employee
-	
-class AddToCart(Form):
-	# cus_name = StringField('Customer Name')
-	p_name = SelectField('Product', choices=[])
-	added = IntegerField('Quantity', [validators.NumberRange(min=1, max=100)])
-	
-class CusName(Form):
-	cusname = StringField('Customer Name', [validators.Length(min=1, max=30)])
-	cusphone = IntegerField("Customer Phone")
-	b_date = DateField("Date",format="%Y-%m-%d")
-
-class RecordGenration(Form):
-	rec_type = SelectField("Type",choices = ['Date_Interval','Date_to_Days','All_Month'])
-	rec_type1 = SelectField("type1", choices = ['All','Product'])
-
-
-class DateInterval(Form):
-	date1 = DateField("Start Date",format="%Y-%m-%d")
-	date2 = DateField("End Date",format="%Y-%m-%d")
-
-class DayInterval(Form):
-	date = DateField("Start Date",format="%Y-%m-%d")
-	days = IntegerField("Days",[validators.NumberRange(min=1, max=30)])
-
-class DateIntervalP(Form):
-	date1 = DateField("Start Date",format="%Y-%m-%d")
-	date2 = DateField("End Date",format="%Y-%m-%d")
-	prod  = SelectField("Product", choices=[])
-
-class DayIntervalP(Form):
-	date = DateField("Start Date",format="%Y-%m-%d")
-	days = IntegerField("Days",[validators.NumberRange(min=1, max=30)])
-	prod  = SelectField("Product", choices=[])
-
-class Month(Form):
-	year = IntegerField("Year",[validators.NumberRange(min=2010, max=2020)])
-
-class MonthP(Form):
-	year = IntegerField("Year",[validators.NumberRange(min=2010, max=2020)])
-	prod  = SelectField("Product", choices=[])
-
-
-# urls
-
-@app.route('/', methods=["POST",'GET'])
-def index():
-	# cur = mysql.connection.cursor()
-	# result = cur.execute("select * from users where admin_status=1")
-	# cur.close()
-	# if result > 0 :
-	# 	print("rrrrrr")
-	return render_template('index.html')
-	# else:
-	# 	print("else")
-	# 	return render_template("admin_login.html")
-	
-
-# @app.route('/admin_login', methods=['GET','POST'])
-# def admin_login():
-# 	print("ssssssss")
-# 	if request.method == 'POST':
-# 		username = request.form['username']
-# 		pass_cand = request.form['password']
-# 		u_pass = sha256_crypt.hash(str(pass_cand))
-# 		cur = mysql.connection.cursor()
-# 		print("admin")
-# 		cur.execute("insert into users(u_name,u_pass,admin_status) values(%s,%s,%s)",(username,u_pass,1))
-# 		session['logged_in'] = True
-# 		session['username'] = username
-# 		session['admin_status'] =  True
-# 		reset_cart()
-# 		flash("You are now logged in as Admin !",'success')
-# 		return redirect(url_for('index'))
 
 # UserLogin
 @app.route('/login', methods=['GET','POST'])
@@ -137,7 +42,6 @@ def login():
 			render_template('login.html', error=error)
 
 		cur = mysql.connection.cursor()
-		cur.execute("USE project")
 		result = cur.execute("SELECT * FROM users WHERE u_name = %s", [username])
 
 		if result > 0:
@@ -193,6 +97,12 @@ def is_admin(f):
 			return redirect(url_for('index'))
 	return wrap
 
+# urls
+@is_logged_in
+@app.route('/', methods=["POST",'GET'])
+def index():
+	return render_template('index.html')
+
 #logout
 @app.route('/logout')
 @is_logged_in
@@ -206,7 +116,6 @@ def logout():
 def inv_det():
 	try:
 		cur = mysql.connection.cursor()
-		cur.execute("USE project")
 		result = cur.execute("SELECT * FROM products")
 		prods = cur.fetchall()
 		if result > 0:
@@ -215,6 +124,7 @@ def inv_det():
 	except Exception as e:
 		print(e)
 	return render_template('inv_det.html', prods=prods)
+
 
 
 @app.route('/addprod', methods=['GET', 'POST'])
@@ -226,7 +136,6 @@ def addprod():
 		added = form.added.data
 		cost = form.cost.data
 		cur = mysql.connection.cursor()
-		cur.execute("USE project")
 		try:
 			cur.execute("INSERT INTO products(p_name, cost, avl_qn) VALUES(%s, %s, %s);", (p_name, cost, added))
 			mysql.connection.commit()
@@ -241,7 +150,6 @@ def addprod():
 @is_logged_in
 def remove_prod(p_name):
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 	cur.execute("DELETE FROM products WHERE p_name=%s", [p_name])
 	mysql.connection.commit()
 	cur.close()
@@ -251,7 +159,6 @@ def remove_prod(p_name):
 @is_logged_in
 def edit_cost(p_name):
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 	temp = cur.execute("SELECT * FROM products WHERE p_name = %s", [p_name])
 	prods = cur.fetchone()
 	form = EditCost(request.form)
@@ -274,7 +181,6 @@ def edit_cost(p_name):
 @is_logged_in
 def edit_quantity(p_name):
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 	temp = cur.execute("SELECT * FROM products WHERE p_name = %s", [p_name])
 	prods = cur.fetchone()
 	form = EditQuantity(request.form)
@@ -308,16 +214,40 @@ def add_emp():
 		else:
 			admin_status = 0
 		cur = mysql.connection.cursor()
-		cur.execute("USE project")
 		try:
 			cur.execute('INSERT INTO users(u_name, u_pass, admin_status) VALUES (%s, %s, %s);', (u_name, u_pass, admin_status))
 			mysql.connection.commit()
 			cur.close()
+			flash('user added', 'success')
 		except mysql.connection.IntegrityError:
 			flash = ('Username already exists !', 'danger')
 			redirect(url_for('add_emp'))
 		return redirect(url_for('index'))
 	return render_template('add_emp.html', form=form)
+
+@app.route('/pass_change', methods=['GET', 'POST'])
+def pass_change():
+	cur = mysql.connection.cursor()
+	form = PassChange(request.form)
+	if request.method == 'POST' and form.validate():
+		prev = form.prev.data
+		new = sha256_crypt.hash(str(form.new.data))
+		result = cur.execute("SELECT * FROM users WHERE u_name = %s",[session['username']])
+		if result > 0:
+			# get stored hash
+			data = cur.fetchone()
+			password = data['u_pass']
+			# compare pass
+			if sha256_crypt.verify(str(prev), password):
+				cur.execute("UPDATE users SET u_pass=%s WHERE u_name=%s",(new, session['username']))
+				mysql.connection.commit()
+				cur.close()
+				flash('Password Changed', 'success')
+				return redirect(url_for('index'))
+			else:
+				flash('Incorrect Previous Password', 'danger')
+				return redirect(url_for('index'))
+	return render_template('pass_change.html', form=form)
 
 # billing system code
 #  |
@@ -327,7 +257,6 @@ def add_emp():
 @is_logged_in
 def makebill():
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 	result = cur.execute("SELECT * FROM products")
 	prods = cur.fetchall()
 	form = AddToCart(request.form)
@@ -344,7 +273,6 @@ def makebill():
 			flash('REQ QUANTITY NOT AVAILABLE', 'danger')
 			return redirect(url_for('makebill'))
 		cur.execute("UPDATE products SET avl_qn=%s WHERE p_id=%s", ((avl_qn-added),p_id))
-		print('ranjeet')
 		mysql.connection.commit()
 		t_cost = added * cost
 		if p_name not in session['cart']:
@@ -364,10 +292,11 @@ def reset_cart():
 	session['cart'] = {}
 	session['total'] = 0
 
+
+@is_logged_in
 @app.route('/delete_cart')
 def delete_cart():
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 	for key in session['cart']:
 		cur.execute("SELECT avl_qn FROM products WHERE p_name=%s", [key])
 		temp = cur.fetchone()
@@ -378,6 +307,7 @@ def delete_cart():
 	flash('Transaction cancelled', 'danger')
 	return redirect('/')
 
+@is_logged_in
 @app.route('/payment', methods=['GET', 'POST'])
 def payment():
 	if(bool(session['cart'])):
@@ -387,7 +317,6 @@ def payment():
 			cusname = form.cusname.data
 			cusphone = form.cusphone.data
 			b_date = form.b_date.data
-			cur.execute('USE project')
 			result = cur.execute("select * from customer where c_name = %s and c_contact = %s",(cusname,cusphone))
 			if result > 0:
 				data = cur.fetchone()
@@ -422,10 +351,9 @@ def payment():
 		return redirect("makebill")
 	# return render_template("/index.html")
 
-
-
 @app.route('/rec_genrate', methods=['GET', 'POST'])
 @is_logged_in
+@is_admin
 def rec_genrate():
 	form = RecordGenration(request.form)
 	if request.method == 'POST': 
@@ -433,7 +361,7 @@ def rec_genrate():
 		rec_type1 = form.rec_type1.data 	
 		if rec_type1 == "All":
 			if rec_type == "Date_Interval":
-				return redirect("date")
+				return redirect("dates")
 			elif rec_type == "Date_to_Days":
 				return redirect("days")
 			else:
@@ -452,21 +380,18 @@ def rec_genrate():
 
 	return render_template('rec_genrate.html',form=form )
 
-
 @app.route('/dates', methods=['GET','POST'])
 @is_logged_in
+@is_admin
 def dates():
 	form = DateInterval(request.form)
 	if request.method == 'POST':
 		date1 = form.date1.data
 		date2 = form.date2.data
-		# year = date.today().year
 		cur = mysql.connection.cursor()
 		result = cur.execute("select sum(total) as total , date(ddtt) dd from t_hist where date(ddtt) between %s and %s group by date(ddtt)",(date1,date2))
 		data = cur.fetchall() 
-		cur.close()		
-		print("qunt" in data)
-		print()
+		cur.close()
 		dates= [x['dd'] for x in data]
 		total = [x['total'] for x in data]
 		line_chart = pygal.Bar()
@@ -478,9 +403,8 @@ def dates():
 		return render_template( 'charts2.html', chart = chart,data=data,typ="Date TO Date" )
 	return render_template('dates.html',form=form)
 
-
-
 @app.route('/days', methods=['GET','POST'])
+@is_admin
 @is_logged_in
 def days():
 	form = DayInterval(request.form)
@@ -503,13 +427,14 @@ def days():
 	return render_template('days.html',form=form)
 
 @app.route('/month',methods=["POST","GET"] )
+@is_admin
 @is_logged_in
 def month():
 	form = Month(request.form)
 	if request.method == 'POST':
 		year = form.year.data
 		cur = mysql.connection.cursor()
-		resurl = cur.execute("select sum(total) as total , month(ddtt) as dd from t_hist where year(ddtt) = %s group by month(ddtt)",year)
+		resurl = cur.execute("select sum(total) as total , month(ddtt) as dd from t_hist where year(ddtt) = %s group by month(ddtt)",[year])
 		data = cur.fetchall()
 		cur.close()
 		dates = [x['dd'] for x in data]
@@ -526,11 +451,11 @@ def month():
 
 
 @app.route('/datep', methods=['GET','POST'])
+@is_admin
 @is_logged_in
 def datep():
 	form = DateIntervalP(request.form)
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 	result = cur.execute("SELECT * FROM products")
 	prods = cur.fetchall()
 	form.prod.choices = [x['p_name'] for x in prods]
@@ -560,11 +485,11 @@ def datep():
 
 
 @app.route('/daysp', methods=['GET','POST'])
+@is_admin
 @is_logged_in
 def daysp():
 	form = DayIntervalP(request.form)
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 	result = cur.execute("SELECT * FROM products")
 	prods = cur.fetchall()
 	form.prod.choices = [x['p_name'] for x in prods]
@@ -593,10 +518,10 @@ def daysp():
 
 @app.route('/monthp', methods=["POST","GET"])
 @is_logged_in
+@is_admin
 def monthp():
 	form = MonthP(request.form)
 	cur = mysql.connection.cursor()
-	cur.execute("USE project")
 	result = cur.execute("SELECT * FROM products")
 	prods = cur.fetchall()
 	form.prod.choices = [x['p_name'] for x in prods]

@@ -15,11 +15,9 @@ pip install -r requirements.txt
 mysql -u yourUserName -p project < dbinit.sql
 ```
 
-3. Change the username and password in dbinit.py to your local system MySQL username and password in app.py
+3. Change the username and password in dbinit.py to your local system MySQL username and password in dbconnect.py
 ```python
 class dbconnect():
-    host = 'localhost'
     user = 'root'     # mysql db username
     passwd = 'pass'   # mysql db password
-    cursorclass = 'DictCursor'
 ```

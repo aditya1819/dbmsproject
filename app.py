@@ -9,7 +9,6 @@ import pygal
 from forms import *
 from dbconnet import dbconnect
 
-
 app = Flask(__name__)
 app.secret_key='thisisnotasecretkeycozitsnotsecret'
 
@@ -381,7 +380,6 @@ def rec_genrate():
 				return redirect("monthp")
 
 	return render_template('rec_genrate.html',form=form )
-
 @app.route('/dates', methods=['GET','POST'])
 @is_logged_in
 @is_admin
@@ -390,27 +388,33 @@ def dates():
 	if request.method == 'POST':
 		date1 = form.date1.data
 		date2 = form.date2.data
-		cur = mysql.connection.cursor()
-		result = cur.execute("select sum(total) as total , date(ddtt) dd from t_hist where date(ddtt) between %s and %s group by date(ddtt)",(date1,date2))
-		data = cur.fetchall() 
-		cur.close()
-		dates= [x['dd'] for x in data]
-		total = [x['total'] for x in data]
-		line_chart = pygal.Bar()
-		line_chart.title = 'form '+str(date1)+'to'+str(date2)+"sell"
-		line_chart.x_labels = map(str, dates)
-		line_chart.add("Total",total)
-		line_chart.render()
-		chart = line_chart.render_data_uri()
-		return render_template( 'charts2.html', chart = chart,data=data,typ="Date TO Date" )
+		if (date1 < date2):
+			cur = mysql.connection.cursor()
+			result = cur.execute("select sum(total) as total , date(ddtt) dd from t_hist where date(ddtt) between %s and %s group by date(ddtt)",(date1,date2))
+			data = cur.fetchall() 
+			cur.close()		
+			dates= [x['dd'] for x in data]
+			total = [x['total'] for x in data]
+			line_chart = pygal.Bar()
+			line_chart.title = 'form '+str(date1)+'to'+str(date2)+"sell"
+			line_chart.x_labels = map(str, dates)
+			line_chart.add("Total",total)
+			line_chart.render()
+			chart = line_chart.render_data_uri()
+			return render_template( 'charts2.html', chart = chart,data=data,typ="Date TO Date",type1="Date" )
+		else:
+			flash("1st date should be less than 2nd one",'danger')
+			return render_template('dates.html',form=form)
 	return render_template('dates.html',form=form)
 
+
+
 @app.route('/days', methods=['GET','POST'])
-@is_admin
 @is_logged_in
+@is_admin
 def days():
 	form = DayInterval(request.form)
-	if request.method == 'POST':
+	if request.method == 'POST' and form.validate():
 		date = form.date.data
 		days = form.days.data
 		cur = mysql.connection.cursor()
@@ -425,15 +429,15 @@ def days():
 		line_chart.add("Total",total)
 		line_chart.render()
 		chart = line_chart.render_data_uri()
-		return render_template( 'charts2.html', chart = chart,data=data,typ="Days" )
+		return render_template( 'charts2.html', chart = chart,data=data,typ="Days" ,type1="Date")
 	return render_template('days.html',form=form)
 
 @app.route('/month',methods=["POST","GET"] )
-@is_admin
 @is_logged_in
+@is_admin
 def month():
 	form = Month(request.form)
-	if request.method == 'POST':
+	if request.method == 'POST' and form.validate():
 		year = form.year.data
 		cur = mysql.connection.cursor()
 		resurl = cur.execute("select sum(total) as total , month(ddtt) as dd from t_hist where year(ddtt) = %s group by month(ddtt)",[year])
@@ -447,55 +451,61 @@ def month():
 		line_chart.add("Total",total)
 		line_chart.render()
 		chart = line_chart.render_data_uri()
-		return render_template( 'charts2.html', chart = chart,data=data,typ = "MONTH " )
+		return render_template( 'charts2.html', chart = chart,data=data,typ = "MONTH " ,type1="Month")
 	return render_template('month.html',form=form)
 
 
 
 @app.route('/datep', methods=['GET','POST'])
-@is_admin
 @is_logged_in
+@is_admin
 def datep():
 	form = DateIntervalP(request.form)
 	cur = mysql.connection.cursor()
+	cur.execute("USE project")
 	result = cur.execute("SELECT * FROM products")
 	prods = cur.fetchall()
 	form.prod.choices = [x['p_name'] for x in prods]
-	if request.method == 'POST':
+	if request.method == 'POST' and form.validate():
 		date1 = form.date1.data
 		date2 = form.date2.data
 		prod = form.prod.data
-		result = cur.execute("select * from products where p_name = %s",[prod])
-		data = cur.fetchone()
-		p_id = data['p_id']
-		result = cur.execute("select sum(qunt*cost) as total,sum(qunt) as qunt , date(ddmm) as dd from record where date(ddmm) between %s and %s  and p_id= %s group by date(ddmm)",(date1,date2,[p_id]))
-		data = cur.fetchall()
-		cur.close()
-		total = [x['total'] for x in data]
-		qunt = [x['qunt'] for x in data]
-		dates= [x['dd'] for x in data]
-		line_chart = pygal.Bar()
-		line_chart.title = 'form '+str(date1)+'to'+str(date2)+"sell of "+str(prod)
-		line_chart.x_labels = map(str, dates)
-		line_chart.add("Total",total)
-		line_chart.add("qunt",qunt)
-		line_chart.render()
-		chart = line_chart.render_data_uri()
-		return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(), typ="Date To Date")
+		if (date1 < date2):
+			result = cur.execute("select * from products where p_name = %s",[prod])
+			data = cur.fetchone()
+			p_id = data['p_id']
+			result = cur.execute("select sum(qunt*cost) as total,sum(qunt) as qunt , date(ddmm) as dd from record where date(ddmm) between %s and %s  and p_id= %s group by date(ddmm)",(date1,date2,[p_id]))
+			data = cur.fetchall()
+			cur.close()
+			total = [x['total'] for x in data]
+			qunt = [x['qunt'] for x in data]
+			dates= [x['dd'] for x in data]
+			line_chart = pygal.Bar()
+			line_chart.title = 'form '+str(date1)+' to '+str(date2)+" sell of "+str(prod)
+			line_chart.x_labels = map(str, dates)
+			line_chart.add("quantity",qunt)
+			line_chart.render()
+			chart = line_chart.render_data_uri()
+			return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(), typ="Date To Date",type1="Date")
+		else:
+			flash("1st date should be less than 2nd one",'danger')
+			return render_template('datep.html',form=form)
+
 	return render_template('datep.html',form=form)
 
 
 
 @app.route('/daysp', methods=['GET','POST'])
-@is_admin
 @is_logged_in
+@is_admin
 def daysp():
 	form = DayIntervalP(request.form)
 	cur = mysql.connection.cursor()
+	cur.execute("USE project")
 	result = cur.execute("SELECT * FROM products")
 	prods = cur.fetchall()
 	form.prod.choices = [x['p_name'] for x in prods]
-	if request.method == 'POST':
+	if request.method == 'POST' and form.validate():
 		date = form.date.data
 		days = form.days.data
 		prod = form.prod.data
@@ -511,11 +521,10 @@ def daysp():
 		line_chart = pygal.Bar()
 		line_chart.title = "from"+str(date)+"to"+str(days)+'days sell of '+str(prod)
 		line_chart.x_labels = map(str, dates)
-		line_chart.add("Total",total)
-		line_chart.add("qunt",qunt)
+		line_chart.add("quantity",qunt)
 		line_chart.render()
 		chart = line_chart.render_data_uri()
-		return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(),typ="days")
+		return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(),typ="days",type1="Date")
 	return render_template('daysp.html',form=form)
 
 @app.route('/monthp', methods=["POST","GET"])
@@ -524,10 +533,11 @@ def daysp():
 def monthp():
 	form = MonthP(request.form)
 	cur = mysql.connection.cursor()
+	cur.execute("USE project")
 	result = cur.execute("SELECT * FROM products")
 	prods = cur.fetchall()
 	form.prod.choices = [x['p_name'] for x in prods]
-	if request.method == 'POST':
+	if request.method == 'POST' and form.validate():
 		prod = form.prod.data
 		year = form.year.data
 		result = cur.execute("select * from products where p_name = %s",[prod])
@@ -542,13 +552,11 @@ def monthp():
 		line_chart = pygal.Bar()
 		line_chart.title = 'month wise sell of'+ str(prod)
 		line_chart.x_labels = map(str, dates)
-		line_chart.add("Total",total)
-		line_chart.add("qunt",qunt)
+		line_chart.add("quantity",qunt)
 		line_chart.render()
 		chart = line_chart.render_data_uri()
-		return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(),typ = "MONTH")
+		return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(),typ = "MONTH",type1="Month")
 	return render_template('monthp.html',form=form)
-
 
 
 if __name__ == "__main__":

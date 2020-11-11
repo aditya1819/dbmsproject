@@ -1,0 +1,36 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<div class="row style="padding-top: 40px;">
+  <div class="col col-md-4 float-right">
+    <div>
+        <h3>ALL SEll</h3>
+    </div>
+    <div>
+        <h4>{{typ}}</h4>
+    </div>
+    <style>
+      table, th, td {
+        border: 2px solid black;
+      }
+      </style>
+    <table>
+      <tr>
+        <th>Date</th>
+        <th>Total Amount</th>
+      </tr>
+
+      {% for d in data %}
+        <tr>
+          <td>{{d.dd}}</td>
+          <td>{{d.total}}</td>
+        </tr>
+      {% endfor%}
+  </table>
+  </div>
+  <div class="col col-md-5">
+    <embed type="image/svg+xml" src= {{ chart|safe }} style="height: 600px; width: auto;" />
+  </div>
+</div>
+
+{% endblock%}

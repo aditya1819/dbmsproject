@@ -205,7 +205,6 @@ def edit_quantity(p_name):
 @is_admin
 def add_emp():
 	form = AddEmp(request.form)
-
 	if request.method == 'POST' and form.validate():
 		u_name = form.u_name.data
 		u_pass = sha256_crypt.hash(str(form.u_pass.data))
@@ -221,7 +220,7 @@ def add_emp():
 			cur.close()
 			flash('user added', 'success')
 		except mysql.connection.IntegrityError:
-			flash = ('Username already exists !', 'danger')
+			flash('Username already exists !', 'danger')
 			redirect(url_for('add_emp'))
 		return redirect(url_for('index'))
 	return render_template('add_emp.html', form=form)
@@ -396,7 +395,7 @@ def dates():
 			dates= [x['dd'] for x in data]
 			total = [x['total'] for x in data]
 			line_chart = pygal.Bar()
-			line_chart.title = 'form '+str(date1)+'to'+str(date2)+"sell"
+			line_chart.title = 'Form '+str(date1)+' to '+str(date2)+" sell"
 			line_chart.x_labels = map(str, dates)
 			line_chart.add("Total",total)
 			line_chart.render()
@@ -424,7 +423,7 @@ def days():
 		dates = [x['dd'] for x in data]
 		total = [x['total'] for x in data]
 		line_chart = pygal.Bar()
-		line_chart.title = "from "+str(date)+" to "+str(days)+' days sell'
+		line_chart.title = "From "+str(date)+" to "+str(days)+' days sell'
 		line_chart.x_labels = map(str, dates)
 		line_chart.add("Total",total)
 		line_chart.render()
@@ -446,7 +445,7 @@ def month():
 		dates = [x['dd'] for x in data]
 		total = [x['total'] for x in data]
 		line_chart = pygal.Bar()
-		line_chart.title = 'month wise sell of all Product' 
+		line_chart.title = 'Month wise sell of all Product' 
 		line_chart.x_labels = map(str, dates)
 		line_chart.add("Total",total)
 		line_chart.render()
@@ -481,7 +480,7 @@ def datep():
 			qunt = [x['qunt'] for x in data]
 			dates= [x['dd'] for x in data]
 			line_chart = pygal.Bar()
-			line_chart.title = 'form '+str(date1)+' to '+str(date2)+" sell of "+str(prod)
+			line_chart.title = 'Form '+str(date1)+' to '+str(date2)+" sell of "+str(prod)
 			line_chart.x_labels = map(str, dates)
 			line_chart.add("quantity",qunt)
 			line_chart.render()
@@ -512,14 +511,14 @@ def daysp():
 		result = cur.execute("select * from products where p_name = %s",[prod])
 		data = cur.fetchone()
 		p_id = data['p_id']
-		result = cur.execute("select sum(qunt*cost) as total,sum(qunt) as qunt , month(ddmm) as dd from record where date(ddmm) between %s and date_add(%s, interval %s day)  and p_id=%s  group by date(ddmm)",(date,date,days,[p_id]))
+		result = cur.execute("select sum(qunt*cost) as total,sum(qunt) as qunt , date(ddmm) as dd from record where date(ddmm) between %s and date_add(%s, interval %s day)  and p_id=%s  group by date(ddmm)",(date,date,days,[p_id]))
 		data = cur.fetchall()
 		cur.close()
 		total = [x['total'] for x in data]
 		qunt = [x['qunt'] for x in data]
 		dates = [x['dd'] for x in data]
 		line_chart = pygal.Bar()
-		line_chart.title = "from"+str(date)+"to"+str(days)+'days sell of '+str(prod)
+		line_chart.title = "From "+str(date)+" to "+str(days)+' days sell of '+str(prod)
 		line_chart.x_labels = map(str, dates)
 		line_chart.add("quantity",qunt)
 		line_chart.render()
@@ -550,7 +549,7 @@ def monthp():
 		qunt = [x['qunt'] for x in data]
 		dates = [x['dd'] for x in data]
 		line_chart = pygal.Bar()
-		line_chart.title = 'month wise sell of'+ str(prod)
+		line_chart.title = 'Month wise sell of '+ str(prod)
 		line_chart.x_labels = map(str, dates)
 		line_chart.add("quantity",qunt)
 		line_chart.render()

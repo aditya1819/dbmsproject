@@ -629,6 +629,11 @@ def search_by_cus():
 			return render_template('get_bills.html',data=data)
 	return render_template('search_by_cus.html',form=form)
 
+@app.route('/about_us')
+def about_us():
+	return render_template('about_us.html')
+
+
 if __name__ == "__main__":
 	app.run(debug=True)
 

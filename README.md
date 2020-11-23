@@ -9,9 +9,6 @@ pip install -r requirements.txt
 
 2. Run dbinit.sql to Inital database and create required Schema for the project
 ```
-mysql> create database project
-```
-```
 mysql -u yourUserName -p project < dbinit.sql
 ```
 
@@ -22,3 +19,5 @@ app.config['MYSQL_USER'] = 'Your Database Username here'
 app.config['MYSQL_PASSWORD'] = 'Your Database Password here'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
 ```
+
+### edited by ranjeet

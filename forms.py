@@ -71,3 +71,8 @@ class MonthP(Form):
 class PassChange(Form):
 	prev = PasswordField('Previous Password', [validators.DataRequired()])
 	new = PasswordField('New Password', [validators.DataRequired()])
+
+
+class SearchBill(Form):
+	c_name=SelectField("Name",choices=[])
+	c_contact=SelectField("Contact no",choices=[])

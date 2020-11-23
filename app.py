@@ -122,6 +122,7 @@ def inv_det():
 		prods = cur.fetchall()
 		if result > 0:
 			return render_template('inv_det.html', prods=prods)
+			# return redirect('inv_det')
 		cur.close()
 	except Exception as e:
 		print(e)
@@ -586,11 +587,47 @@ def monthp():
 
 
 @app.route('/all_prev')
+@is_logged_in
 def all_prev():
 	cur = mysql.connection.cursor()
 	cur.execute("select t.id, c.c_name as CusName, t.total as Total, u.u_name as EmpName, t.ddtt as DateTime from t_hist t, customer c, users u where t.c_id=c.cust_id and t.emp_id=u.u_id")
 	res = cur.fetchall()
 	return render_template('all_prev.html', res=res)
+
+
+
+@app.route('/get_bills/<string:c_id>', methods=['GET' , 'POST'])
+@is_logged_in
+def get_bills(c_id):
+	print("ranjeetaaa")
+	return render_template('get_bills.html')
+
+@app.route('/search_by_cus', methods=["POST","GET"])
+@is_logged_in
+@is_admin
+def search_by_cus():
+	form=SearchBill(request.form)
+	cur = mysql.connection.cursor()
+	cur.execute("USE project")
+	result = cur.execute("SELECT distinct c_name FROM customer")
+	cust = cur.fetchall()
+	print(cust)
+	form.c_name.choices = [x['c_name'] for x in cust]
+	if request.method == 'POST':
+		temp = form.c_name.data
+		print(temp)
+		result = cur.execute("SELECT c_contact FROM customer where c_name=%s",[temp])
+		cust = cur.fetchall()
+		print(cust)
+		form.c_contact.choices=[x['c_contact'] for x in cust]
+		if form.validate():			
+			result = cur.execute("SELECT cust_id FROM customer where c_name=%s and c_contact=%s",(temp,form.c_contact.data))
+			cust_id=cur.fetchone()
+			id_c = cust_id["cust_id"]
+			cur.execute("select t.id, c.c_name as CusName, t.total as Total, u.u_name as EmpName, t.ddtt as DateTime from t_hist t, customer c, users u where t.c_id=%s",[id_c])
+			data=cur.fetchall()
+			return render_template('get_bills.html',data=data)
+	return render_template('search_by_cus.html',form=form)
 
 if __name__ == "__main__":
 	app.run(debug=True)

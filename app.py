@@ -8,6 +8,7 @@ from datetime import date
 import pygal
 from forms import *
 from dbconnet import dbconnect
+import numpy as np
 
 app = Flask(__name__)
 app.secret_key='thisisnotasecretkeycozitsnotsecret'
@@ -136,9 +137,10 @@ def addprod():
 		p_name = form.p_name.data
 		added = form.added.data
 		cost = form.cost.data
+		cost_p= form.cost_p.data
 		cur = mysql.connection.cursor()
 		try:
-			cur.execute("INSERT INTO products(p_name, cost, avl_qn) VALUES(%s, %s, %s);", (p_name, cost, added))
+			cur.execute("INSERT INTO products(p_name, cost,cost_p, avl_qn) VALUES(%s, %s, %s,%s);", (p_name, cost,cost_p, added))
 			mysql.connection.commit()
 			cur.close()
 		except mysql.connection.IntegrityError:
@@ -151,25 +153,28 @@ def addprod():
 @is_logged_in
 def remove_prod(p_name):
 	cur = mysql.connection.cursor()
-	cur.execute("DELETE FROM products WHERE p_name=%s", [p_name])
+	cur.execute("UPDATE products SET avl_qn = 0,cost=0,cost_p=0 WHERE p_name=%s", [p_name])
 	mysql.connection.commit()
 	cur.close()
 	return redirect(url_for('inv_det'))
 
 @app.route('/edit_cost/<string:p_name>', methods=['GET', 'POST'])
 @is_logged_in
+@is_admin
 def edit_cost(p_name):
 	cur = mysql.connection.cursor()
 	temp = cur.execute("SELECT * FROM products WHERE p_name = %s", [p_name])
 	prods = cur.fetchone()
 	form = EditCost(request.form)
 	form.cost.data = prods['cost']
+	form.cost_p.data = prods['cost_p']
 	cur.close()
 	if request.method == 'POST' and form.validate():
 		cost = request.form['cost']
+		cost_p = request.form['cost_p']
 		cur = mysql.connection.cursor()
 		cur.execute("USE project")
-		cur.execute("UPDATE products SET cost = %s WHERE p_name=%s", (cost, p_name))
+		cur.execute("UPDATE products SET cost = %s,cost_p=%s WHERE p_name=%s", (cost,cost_p, p_name))
 		mysql.connection.commit()
 		return redirect(url_for('inv_det'))
 
@@ -269,28 +274,32 @@ def makebill():
 		p_id = int(temp['p_id'])
 		avl_qn = int(temp['avl_qn'])
 		cost = int(temp['cost'])
+		cost_p = int(temp['cost_p'])
 		if int(added) > int(avl_qn) :
 			flash('REQ QUANTITY NOT AVAILABLE', 'danger')
 			return redirect(url_for('makebill'))
 		cur.execute("UPDATE products SET avl_qn=%s WHERE p_id=%s", ((avl_qn-added),p_id))
 		mysql.connection.commit()
 		t_cost = added * cost
+		t_cost_p = added * cost_p
 		if p_name not in session['cart']:
 			result = cur.execute("select * from products where p_name=%s",[p_name])
 			data = cur.fetchone()
 			cur.close()
 			p_id = data['p_id']
-			session['cart'][p_name] = {'a': 0, 'c': cost,'t': 0,'p_id':p_id}
+			session['cart'][p_name] = {'a': 0, 'c': cost,'c_p':cost_p,'t': 0,'p_id':p_id}
 		session['cart'][p_name]['a'] += added
 		session['cart'][p_name]['t'] += t_cost
-		session['total'] += t_cost
-		flash('Item added to cart', 'success')
+		session['total'] = {'sell':0,'p':0}
+		session['total']["sell"] += t_cost
+		session['total']["p"] += t_cost_p
+		flash('Item added t o cart', 'success')
 		return redirect('makebill')
 	return render_template('makebill.html', prods=prods, form=form, sess=session['cart'], total=session['total'])
 
 def reset_cart():
 	session['cart'] = {}
-	session['total'] = 0
+	session['total'] = {}
 
 
 @is_logged_in
@@ -331,14 +340,14 @@ def payment():
 			result = cur.execute("select * from users where u_name = %s",[session['username']])
 			data = cur.fetchone()
 			emp_id=data['u_id']
-			cur.execute("insert into t_hist(c_id,emp_id,total,ddtt) values(%s,%s,%s,%s)",(c_id,emp_id,[session['total']],b_date))
+			cur.execute("insert into t_hist(c_id,emp_id,total,total_p,ddtt) values(%s,%s,%s,%s,%s)",(c_id,emp_id,[session['total']["sell"]],[session['total']["p"]],b_date))
 			mysql.connection.commit()
 
 			result = cur.execute("select * from t_hist order by id DESC limit 1")
 			data = cur.fetchone()
 			id = data['id']
 			for key in session['cart']:
-				cur.execute("insert into record(id,p_id,cost,qunt,ddmm) values(%s,%s,%s,%s,%s)",(id,[session['cart'][key]['p_id']],[session['cart'][key]['c']],[session['cart'][key]['a']],b_date))
+				cur.execute("insert into record(id,p_id,cost,cost_p,qunt,ddmm) values(%s,%s,%s,%s,%s,%s)",(id,[session['cart'][key]['p_id']],[session['cart'][key]['c']],[session['cart'][key]['c_p']],[session['cart'][key]['a']],b_date))
 				mysql.connection.commit() 
 			cur.close()
 			reset_cart()
@@ -389,15 +398,18 @@ def dates():
 		date2 = form.date2.data
 		if (date1 < date2):
 			cur = mysql.connection.cursor()
-			result = cur.execute("select sum(total) as total , date(ddtt) dd from t_hist where date(ddtt) between %s and %s group by date(ddtt)",(date1,date2))
+			result = cur.execute("select sum(total) as total,sum(total_p) as total_p , date(ddtt) dd from t_hist where date(ddtt) between %s and %s group by date(ddtt)",(date1,date2))
 			data = cur.fetchall() 
 			cur.close()		
 			dates= [x['dd'] for x in data]
 			total = [x['total'] for x in data]
+			total_p = [x['total_p'] for x in data]
 			line_chart = pygal.Bar()
 			line_chart.title = 'Form '+str(date1)+' to '+str(date2)+" sell"
 			line_chart.x_labels = map(str, dates)
 			line_chart.add("Total",total)
+			prof=np.array(total)-np.array(total_p)
+			line_chart.add("Profit",prof)
 			line_chart.render()
 			chart = line_chart.render_data_uri()
 			return render_template( 'charts2.html', chart = chart,data=data,typ="Date TO Date",type1="Date" )
@@ -417,15 +429,18 @@ def days():
 		date = form.date.data
 		days = form.days.data
 		cur = mysql.connection.cursor()
-		resurl = cur.execute("select sum(total) as total , date(ddtt) as dd from t_hist where date(ddtt) between %s and date_add(%s, interval %s day) group by date(ddtt)",(date,date,days))
+		resurl = cur.execute("select sum(total) as total , sum(total_p) as total_p,date(ddtt) as dd from t_hist where date(ddtt) between %s and date_add(%s, interval %s day) group by date(ddtt)",(date,date,days))
 		data = cur.fetchall()
 		cur.close()
 		dates = [x['dd'] for x in data]
 		total = [x['total'] for x in data]
+		total_p = [x['total_p'] for x in data]
 		line_chart = pygal.Bar()
 		line_chart.title = "From "+str(date)+" to "+str(days)+' days sell'
 		line_chart.x_labels = map(str, dates)
 		line_chart.add("Total",total)
+		prof=np.array(total)-np.array(total_p)
+		line_chart.add("Profit",prof)
 		line_chart.render()
 		chart = line_chart.render_data_uri()
 		return render_template( 'charts2.html', chart = chart,data=data,typ="Days" ,type1="Date")
@@ -439,15 +454,18 @@ def month():
 	if request.method == 'POST' and form.validate():
 		year = form.year.data
 		cur = mysql.connection.cursor()
-		resurl = cur.execute("select sum(total) as total , month(ddtt) as dd from t_hist where year(ddtt) = %s group by month(ddtt)",[year])
+		resurl = cur.execute("select sum(total) as total , sum(total_p) as total_p,month(ddtt) as dd from t_hist where year(ddtt) = %s group by month(ddtt) order by month(ddtt)",[year])
 		data = cur.fetchall()
 		cur.close()
 		dates = [x['dd'] for x in data]
 		total = [x['total'] for x in data]
+		total_p = [x['total_p'] for x in data]
 		line_chart = pygal.Bar()
 		line_chart.title = 'Month wise sell of all Product' 
 		line_chart.x_labels = map(str, dates)
 		line_chart.add("Total",total)
+		prof=np.array(total)-np.array(total_p)
+		line_chart.add("Profit",prof)
 		line_chart.render()
 		chart = line_chart.render_data_uri()
 		return render_template( 'charts2.html', chart = chart,data=data,typ = "MONTH " ,type1="Month")
@@ -473,16 +491,19 @@ def datep():
 			result = cur.execute("select * from products where p_name = %s",[prod])
 			data = cur.fetchone()
 			p_id = data['p_id']
-			result = cur.execute("select sum(qunt*cost) as total,sum(qunt) as qunt , date(ddmm) as dd from record where date(ddmm) between %s and %s  and p_id= %s group by date(ddmm)",(date1,date2,[p_id]))
+			result = cur.execute("select sum(qunt*cost) as total, sum(qunt*cost_p) as cost_p,sum(qunt) as qunt , date(ddmm) as dd from record where date(ddmm) between %s and %s  and p_id= %s group by date(ddmm)",(date1,date2,[p_id]))
 			data = cur.fetchall()
 			cur.close()
 			total = [x['total'] for x in data]
 			qunt = [x['qunt'] for x in data]
+			cost_p = [x['cost_p'] for x in data]
 			dates= [x['dd'] for x in data]
 			line_chart = pygal.Bar()
 			line_chart.title = 'Form '+str(date1)+' to '+str(date2)+" sell of "+str(prod)
 			line_chart.x_labels = map(str, dates)
-			line_chart.add("quantity",qunt)
+			# line_chart.add("quantity",qunt)
+			prof=np.array(total)-np.array(cost_p)
+			line_chart.add("Profir",prof)
 			line_chart.render()
 			chart = line_chart.render_data_uri()
 			return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(), typ="Date To Date",type1="Date")
@@ -511,16 +532,19 @@ def daysp():
 		result = cur.execute("select * from products where p_name = %s",[prod])
 		data = cur.fetchone()
 		p_id = data['p_id']
-		result = cur.execute("select sum(qunt*cost) as total,sum(qunt) as qunt , date(ddmm) as dd from record where date(ddmm) between %s and date_add(%s, interval %s day)  and p_id=%s  group by date(ddmm)",(date,date,days,[p_id]))
+		result = cur.execute("select sum(qunt*cost) as total,sum(qunt*cost_p) as cost_p,sum(qunt) as qunt , date(ddmm) as dd from record where date(ddmm) between %s and date_add(%s, interval %s day)  and p_id=%s  group by date(ddmm)",(date,date,days,[p_id]))
 		data = cur.fetchall()
 		cur.close()
 		total = [x['total'] for x in data]
 		qunt = [x['qunt'] for x in data]
+		cost_p = [x['cost_p'] for x in data]
 		dates = [x['dd'] for x in data]
 		line_chart = pygal.Bar()
 		line_chart.title = "From "+str(date)+" to "+str(days)+' days sell of '+str(prod)
 		line_chart.x_labels = map(str, dates)
-		line_chart.add("quantity",qunt)
+		# line_chart.add("quantity",qunt)
+		prof=np.array(total)-np.array(cost_p)
+		line_chart.add("Profir",prof)
 		line_chart.render()
 		chart = line_chart.render_data_uri()
 		return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(),typ="days",type1="Date")
@@ -542,16 +566,19 @@ def monthp():
 		result = cur.execute("select * from products where p_name = %s",[prod])
 		data = cur.fetchone()
 		p_id = data['p_id']
-		result = cur.execute("select sum(qunt*cost) as total,sum(qunt) as qunt , month(ddmm) as dd from record where year(ddmm)=%s  and p_id= %s group by date(ddmm)",(year,[p_id]))
+		result = cur.execute("select sum(qunt*cost) as total,sum(qunt*cost_p) as cost_p,sum(qunt) as qunt , month(ddmm) as dd from record where year(ddmm)=%s  and p_id= %s group by month(ddmm)",(year,[p_id]))
 		data = cur.fetchall()
 		cur.close()
 		total = [x['total'] for x in data]
 		qunt = [x['qunt'] for x in data]
+		cost_p = [x['cost_p'] for x in data]
 		dates = [x['dd'] for x in data]
 		line_chart = pygal.Bar()
 		line_chart.title = 'Month wise sell of '+ str(prod)
 		line_chart.x_labels = map(str, dates)
-		line_chart.add("quantity",qunt)
+		# line_chart.add("quantity",qunt)
+		prof=np.array(total)-np.array(cost_p)
+		line_chart.add("Profit",prof)
 		line_chart.render()
 		chart = line_chart.render_data_uri()
 		return render_template( 'charts1.html', chart = chart,data=data ,prod=prod.capitalize(),typ = "MONTH",type1="Month")

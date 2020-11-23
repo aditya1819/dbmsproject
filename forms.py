@@ -8,10 +8,12 @@ from passlib.hash import sha256_crypt
 class AddNewProd(Form):
 	p_name = StringField('Product Name', [validators.Length(min=4, max=30)])
 	added = IntegerField('Intital Quantity', [validators.NumberRange(min=1, max=100)])
-	cost = IntegerField('Cost per unit')
+	cost = IntegerField('selling Cost per unit')
+	cost_p = IntegerField('purchase Cost per unit')
 
 class EditCost(Form):
-	cost = IntegerField('Cost per unit')
+	cost = IntegerField('Selling Cost per unit')
+	cost_p = IntegerField('Purchase Cost per unit')
 
 class EditQuantity(Form):
 	quantity = IntegerField('Original quantity')
@@ -38,7 +40,7 @@ class CusName(Form):
 
 class RecordGenration(Form):
 	rec_type = SelectField("Type",choices = ['Date_Interval','Date_to_Days','All_Month'])
-	rec_type1 = SelectField("type1", choices = ['All','Product'])
+	rec_type1 = SelectField("Product", choices = ['All','Product'])
 
 
 class DateInterval(Form):

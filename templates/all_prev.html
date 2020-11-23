@@ -1,0 +1,30 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+
+<h3>ALL PREVIOUS TRANSACTIONS</h3>
+<br><hr><br>
+<table class="table table-hover table-dark">
+    <thead>
+      <tr>
+        <th scope="col">T_id</th>
+        <th scope="col">Customer Name</th>
+        <th scope="col">Total Amount</th>
+        <th scope="col">Emp Name</th>
+        <th scope="col">Date-Time</th>
+      </tr>
+    </thead>
+    <tbody>
+        {% for r in res %}
+        <tr>
+            <th scope="row">{{ r.id }}</th>
+            <td>{{ r.CusName }}</td>
+            <td>{{ r.Total }}</td>
+            <td>{{ r.EmpName }}</td>
+            <td>{{ r.DateTime }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+{% endblock %}

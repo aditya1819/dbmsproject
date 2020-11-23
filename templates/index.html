@@ -1,3 +1,19 @@
+<style>
+  .row{
+    background-color:whitesmoke;
+    padding: 15px;
+    opacity:.9 ;
+  }
+
+  body{
+    background-image: url({{ url_for('static', filename='index.jpg') }});
+    /* background-repeat: no-repeat;
+    background-size: cover;
+    background-position: fixed; */
+  }
+</style>
+
+
 {% extends 'layout.html' %}
 
 {% block body %}

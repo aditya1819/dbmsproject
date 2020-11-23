@@ -1,7 +1,27 @@
+<style>
+
+  .invtable{
+    margin: auto;
+    width: auto;
+    border: 1px solid black;
+    border-radius: 20px;
+    padding: 20px;
+    background-color: white;
+    opacity: 0.90;
+  }
+
+  body {
+    background-image: url({{ url_for('static', filename='inv.jpg') }})
+    }
+
+</style>
+
+
 {% extends 'layout.html' %}
 
 {% block body%}
-
+<br>
+<div class="invtable">
 <!-- step 1 : display all products  -->
 <br>
 <h3>ALL PRODUCTS</h3>
@@ -39,8 +59,9 @@
     </tbody>
 
   </table>
-  <hr><hr>
-  <a href="/up_inv" class="btn btn-outline-primary">Add Products to Inventory</a>
   <hr>
   <a href="/addprod" class="btn btn-outline-success">Add New Product</a>
-{% endblock %}
+  
+</div>
+  
+  {% endblock %}

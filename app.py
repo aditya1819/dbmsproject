@@ -585,6 +585,13 @@ def monthp():
 	return render_template('monthp.html',form=form)
 
 
+@app.route('/all_prev')
+def all_prev():
+	cur = mysql.connection.cursor()
+	cur.execute("select t.id, c.c_name as CusName, t.total as Total, u.u_name as EmpName, t.ddtt as DateTime from t_hist t, customer c, users u where t.c_id=c.cust_id and t.emp_id=u.u_id")
+	res = cur.fetchall()
+	return render_template('all_prev.html', res=res)
+
 if __name__ == "__main__":
 	app.run(debug=True)
 

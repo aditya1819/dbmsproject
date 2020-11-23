@@ -1,0 +1,24 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<br>
+<h3>date</h3>
+<hr>
+{% from "_includes/_formhelpers.html" import render_field %}
+
+<form method="POST" action="">
+    <div class="form-group">
+        {{render_field(form.c_name, class_="form-control")}}
+    </div>
+
+    <p><input type="submit" class="btn btn-primary" value="Get Cont No."></p>
+
+    <div class="form-group">
+        {{render_field(form.c_contact, class_="form-control")}}
+    </div>
+    <p><input type="submit" class="btn btn-primary" value="Get bill."></p>
+    <!-- <a href="get_bills/{{cust_id}}" class="btn btn-info pull-right">See Detail</a> -->
+
+
+</form>
+{% endblock %}

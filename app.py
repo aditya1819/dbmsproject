@@ -291,7 +291,7 @@ def makebill():
 			session['cart'][p_name] = {'a': 0, 'c': cost,'c_p':cost_p,'t': 0,'p_id':p_id}
 		session['cart'][p_name]['a'] += added
 		session['cart'][p_name]['t'] += t_cost
-		session['total'] = {'sell':0,'p':0}
+		# if ('total' not in session):
 		session['total']["sell"] += t_cost
 		session['total']["p"] += t_cost_p
 		flash('Item added t o cart', 'success')
@@ -300,7 +300,8 @@ def makebill():
 
 def reset_cart():
 	session['cart'] = {}
-	session['total'] = {}
+	session['total'] = {'sell':0,'p':0}
+
 
 
 @is_logged_in
@@ -455,7 +456,7 @@ def month():
 	if request.method == 'POST' and form.validate():
 		year = form.year.data
 		cur = mysql.connection.cursor()
-		resurl = cur.execute("select sum(total) as total , sum(total_p) as total_p,month(ddtt) as dd from t_hist where year(ddtt) = %s group by month(ddtt) order by month(ddtt)",[year])
+		resurl = cur.execute("select sum(total) as total , sum(total_p) as total_p,monthname(ddtt) as dd from t_hist where year(ddtt) = %s group by month(ddtt) order by month(ddtt)",[year])
 		data = cur.fetchall()
 		cur.close()
 		dates = [x['dd'] for x in data]
@@ -567,7 +568,7 @@ def monthp():
 		result = cur.execute("select * from products where p_name = %s",[prod])
 		data = cur.fetchone()
 		p_id = data['p_id']
-		result = cur.execute("select sum(qunt*cost) as total,sum(qunt*cost_p) as cost_p,sum(qunt) as qunt , month(ddmm) as dd from record where year(ddmm)=%s  and p_id= %s group by month(ddmm)",(year,[p_id]))
+		result = cur.execute("select sum(qunt*cost) as total,sum(qunt*cost_p) as cost_p,sum(qunt) as qunt , monthname(ddmm) as dd from record where year(ddmm)=%s  and p_id= %s group by month(ddmm)",(year,[p_id]))
 		data = cur.fetchall()
 		cur.close()
 		total = [x['total'] for x in data]
@@ -590,7 +591,7 @@ def monthp():
 @is_logged_in
 def all_prev():
 	cur = mysql.connection.cursor()
-	cur.execute("select t.id, c.c_name as CusName, t.total as Total, u.u_name as EmpName, t.ddtt as DateTime from t_hist t, customer c, users u where t.c_id=c.cust_id and t.emp_id=u.u_id")
+	cur.execute("select t.id, c.c_name as CusName,c.c_contact as ContNo, t.total as Total, u.u_name as EmpName, t.ddtt as DateTime from t_hist t, customer c, users u where t.c_id=c.cust_id and t.emp_id=u.u_id order by t.ddtt desc")
 	res = cur.fetchall()
 	return render_template('all_prev.html', res=res)
 
@@ -623,16 +624,17 @@ def search_by_cus():
 		if form.validate():			
 			result = cur.execute("SELECT cust_id FROM customer where c_name=%s and c_contact=%s",(temp,form.c_contact.data))
 			cust_id=cur.fetchone()
+			print(cust_id)
 			id_c = cust_id["cust_id"]
-			cur.execute("select t.id, c.c_name as CusName, t.total as Total, u.u_name as EmpName, t.ddtt as DateTime from t_hist t, customer c, users u where t.c_id=%s",[id_c])
+			cur.execute("select t_hist.id, customer.c_name as CusName, t_hist.total as Total, users.u_name as EmpName, t_hist.ddtt as DateTime from t_hist inner join  customer on customer.cust_id=t_hist.c_id inner join  users on  users.u_id=t_hist.emp_id where t_hist.c_id=%s",[id_c])
 			data=cur.fetchall()
+			# print(data)
 			return render_template('get_bills.html',data=data)
 	return render_template('search_by_cus.html',form=form)
 
 @app.route('/about_us')
 def about_us():
 	return render_template('about_us.html')
-
 
 if __name__ == "__main__":
 	app.run(debug=True)

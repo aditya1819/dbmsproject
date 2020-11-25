@@ -6,14 +6,14 @@ from passlib.hash import sha256_crypt
 # forms used
 
 class AddNewProd(Form):
-	p_name = StringField('Product Name', [validators.Length(min=4, max=30)])
-	added = IntegerField('Intital Quantity', [validators.NumberRange(min=1, max=100)])
+	p_name = StringField('Product Name', [validators.Length(min=2, max=30)])
+	added = IntegerField('Intital Quantity', [validators.NumberRange(min=1, max=1000)])
 	cost = IntegerField('selling Cost per unit')
-	cost_p = IntegerField('purchase Cost per unit')
+	cost_p = IntegerField('Manufacturing Cost per unit')
 
 class EditCost(Form):
 	cost = IntegerField('Selling Cost per unit')
-	cost_p = IntegerField('Purchase Cost per unit')
+	cost_p = IntegerField('Manufacturing Cost per unit')
 
 class EditQuantity(Form):
 	quantity = IntegerField('Original quantity')
@@ -35,7 +35,7 @@ class AddToCart(Form):
 	
 class CusName(Form):
 	cusname = StringField('Customer Name', [validators.Length(min=1, max=30)])
-	cusphone = IntegerField("Customer Phone")
+	cusphone = StringField("Customer Phone",[validators.Length(10)])
 	b_date = DateField("Date",format="%Y-%m-%d")
 
 class RecordGenration(Form):

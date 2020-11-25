@@ -600,7 +600,6 @@ def all_prev():
 @app.route('/get_bills/<string:c_id>', methods=['GET' , 'POST'])
 @is_logged_in
 def get_bills(c_id):
-	print("ranjeetaaa")
 	return render_template('get_bills.html')
 
 @app.route('/search_by_cus', methods=["POST","GET"])

@@ -84,11 +84,19 @@
   <!-- </thead> -->
   <tbody>
       {% for prod in prods %}
+      {% if prod.avl_qn < 10 %}
+        <tr class="table-danger">
+            <td>{{prod['p_name']}}</td>
+            <td>{{prod.cost}}</td>
+            <td>{{prod.avl_qn}}</td>
+        </tr>
+      {% else %}
       <tr>
-          <td>{{prod['p_name']}}</td>
-          <td>{{prod.cost}}</td>
-          <td>{{prod.avl_qn}}</td>
-     </tr>
+        <td>{{prod['p_name']}}</td>
+        <td>{{prod.cost}}</td>
+        <td>{{prod.avl_qn}}</td>
+      </tr>
+      {% endif%}
      {% endfor %}
 
   </tbody>

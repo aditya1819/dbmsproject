@@ -568,7 +568,7 @@ def monthp():
 		result = cur.execute("select * from products where p_name = %s",[prod])
 		data = cur.fetchone()
 		p_id = data['p_id']
-		result = cur.execute("select sum(qunt*cost) as total,sum(qunt*cost_p) as cost_p,sum(qunt) as qunt , monthname(ddmm) as dd from record where year(ddmm)=%s  and p_id= %s group by month(ddmm)",(year,[p_id]))
+		result = cur.execute("select sum(qunt*cost) as total,sum(qunt*cost_p) as cost_p,sum(qunt) as qunt , monthname(ddmm) as dd from record where year(ddmm)=%s  and p_id= %s group by month(ddmm) order by month(ddmm)",(year,[p_id]))
 		data = cur.fetchall()
 		cur.close()
 		total = [x['total'] for x in data]
@@ -578,7 +578,7 @@ def monthp():
 		line_chart = pygal.Bar()
 		line_chart.title = 'Month wise sell of '+ str(prod)
 		line_chart.x_labels = map(str, dates)
-		# line_chart.add("quantity",qunt)
+		line_chart.add("Total sell amount",total)
 		prof=np.array(total)-np.array(cost_p)
 		line_chart.add("Profit",prof)
 		line_chart.render()

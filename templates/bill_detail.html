@@ -1,0 +1,52 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+
+<h3>Bill Detail</h3>
+<br><hr><br>
+<div class="row p-3 mb-2 bg-secondary text-white">
+    <div class="col-7">
+        <h5>Customer Name : {{c_d.Cusname.capitalize()}}</h5>
+        <h5>Contact No   : {{c_d.Cuscontact}}</h5>
+    </div>
+    <div class="col-5">
+        <h5>Bill NO : {{c_d.t_id}}</h5>
+        <h5>Date   : {{c_d.Datetime}}</h5>
+    </div>
+</div>
+<br>
+<table class="table table-hover">
+    <thead class="thead-dark">
+      <tr >
+        <th scope="col">Sr.no</th>
+        <th scope="col">Product </th>
+        <th scope="col">Cost</th>
+        <th scope="col">Quantity</th>
+        <th scope="col">Total_cost</th>
+        <!-- <th scope="col">Option</th> -->
+      </tr>
+    </thead>
+    <tbody>
+        {% for r in data %}
+        <tr>
+            <th scope="row">{{1}}</th>
+            <td>{{ r.product.capitalize() }}</td>
+            <td>{{ r.cost }}</td>
+            <td>{{ r.qunt }}</td>
+            <td>{{ r.cost * r.qunt }}</td>
+        </tr>
+      {% endfor %}
+      <tr>
+
+      </tr>
+      <tr class='table-warning'>
+        <th scope="row"></th>
+        <td></td>
+        <td></td>
+        <td><b>Total</b> </td>
+        <td><b>{{ c_d.Total }}</b></td>
+    </tr>
+    </tbody>
+  </table>
+
+{% endblock %}

@@ -12,7 +12,7 @@
         <th scope="col">Total Amount</th>
         <th scope="col">Emp Name</th>
         <th scope="col">Date-Time</th>
-        <!-- <th scope="col">Option</th> -->
+        <th scope="col">Option</th>
       </tr>
     </thead>
     <tbody>
@@ -23,7 +23,7 @@
             <td>{{ r.Total }}</td>
             <td>{{ r.EmpName }}</td>
             <td>{{ r.DateTime }}</td>
-            <!-- <td><a href="see_detail/{{r.id}}" class="btn btn-info pull-right">See Detail</a></td> -->
+            <td><a href="bill_detail/{{r.id}}" class="btn btn-info pull-right">See Detail</a></td>
         </tr>
       {% endfor %}
     </tbody>

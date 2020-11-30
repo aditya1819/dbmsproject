@@ -42,7 +42,7 @@
         {% for prod in prods %}
           {% if prod.avl_qn < 10 %}
             <tr class="table-danger">
-                <td>{{prod.p_name}}</td>
+                <td>{{prod.p_name.capitalize()}}</td>
                 <td>{{prod.cost}}</td>
                 <td>{{prod.avl_qn}}</td>
                 <td><a href="edit_cost/{{prod.p_name}}" class="btn btn-info pull-right">Edit Cost</a></td>
@@ -57,7 +57,7 @@
             </tr>
           {% else %}
           <tr>
-            <td>{{prod.p_name}}</td>
+            <td>{{prod.p_name.capitalize()}}</td>
             <td>{{prod.cost}}</td>
             <td>{{prod.avl_qn}}</td>
             <td><a href="edit_cost/{{prod.p_name}}" class="btn btn-info pull-right">Edit Cost</a></td>

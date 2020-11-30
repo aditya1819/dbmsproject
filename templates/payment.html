@@ -18,5 +18,36 @@
     </div>
     <p><input type="submit" class="btn btn-success" value="Done"></p>
 </form>
+<br>
+
+<h4>Cart</h4>
+<table class="table table-sm">
+    <thead class="thead-dark">
+      <tr>
+        <th>Product Name</th>
+        <th>Quantity</th>
+        <th>Cost per item</th>
+        <th>Product Total Cost</th>
+  
+        <!-- <th>Cost</th>
+        <th>Available</th> -->
+      </tr>
+    </thead>
+    <tbody>
+      {% for s in sess %}
+  
+        <tr>
+          <th>{{s}}</th>
+          <th>{{sess[s]['a']}}</th>
+          <th>{{sess[s]['c']}}</th>
+          <th>{{sess[s]['t']}}</th>
+        </tr>
+  
+      {% endfor %}
+  
+    </tbody>
+  
+  </table>
+  
 
 {% endblock %}

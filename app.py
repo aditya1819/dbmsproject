@@ -356,7 +356,7 @@ def payment():
 
 			flash('transaction complete', 'success')
 			return redirect('/')
-		return render_template('payment.html', form=form)
+		return render_template('payment.html', form=form,sess=session['cart'], total=session['total'])
 	else:
 		flash("No product is selected","danger")
 		return redirect("makebill")
@@ -591,8 +591,9 @@ def monthp():
 @is_logged_in
 def all_prev():
 	cur = mysql.connection.cursor()
-	cur.execute("select t.id, c.c_name as CusName,c.c_contact as ContNo, t.total as Total, u.u_name as EmpName, t.ddtt as DateTime from t_hist t, customer c, users u where t.c_id=c.cust_id and t.emp_id=u.u_id order by t.ddtt desc")
+	cur.execute("select t.id, c.c_name as CusName,c.c_contact as ContNo, t.total as Total, u.u_name as EmpName, DATE_FORMAT(date(t.ddtt),%s) as DateTime from t_hist t, customer c, users u where t.c_id=c.cust_id and t.emp_id=u.u_id order by t.ddtt desc",["%d %M %Y"])
 	res = cur.fetchall()
+	cur.close()
 	return render_template('all_prev.html', res=res)
 
 
@@ -625,11 +626,26 @@ def search_by_cus():
 			cust_id=cur.fetchone()
 			print(cust_id)
 			id_c = cust_id["cust_id"]
-			cur.execute("select t_hist.id, customer.c_name as CusName, t_hist.total as Total, users.u_name as EmpName, t_hist.ddtt as DateTime from t_hist inner join  customer on customer.cust_id=t_hist.c_id inner join  users on  users.u_id=t_hist.emp_id where t_hist.c_id=%s",[id_c])
+			cur.execute("select t_hist.id, customer.c_name as CusName, t_hist.total as Total, users.u_name as EmpName, DATE_FORMAT(date(t_hist.ddtt),%s ) as DateTime from t_hist inner join  customer on customer.cust_id=t_hist.c_id inner join  users on  users.u_id=t_hist.emp_id where t_hist.c_id=%s",("%d %M %Y",id_c))
 			data=cur.fetchall()
-			# print(data)
+			cur.close()
 			return render_template('get_bills.html',data=data)
 	return render_template('search_by_cus.html',form=form)
+
+
+@app.route('/bill_detail/<string:id>', methods=['GET' , 'POST'])
+@is_logged_in
+@is_admin
+def bill_detail(id):
+	cur = mysql.connection.cursor()
+	cur.execute("USE project")
+	temp = cur.execute("select t_hist.id as t_id,customer.c_name as Cusname,customer.c_contact as Cuscontact, t_hist.total as Total, DATE_FORMAT(date(t_hist.ddtt),%s) as Datetime from t_hist inner join customer on customer.cust_id=t_hist.c_id where t_hist.id=%s ",("%d %M %Y",id))
+	temp1=cur.fetchone()
+	temp = cur.execute("select products.p_name as product,record.cost as cost,record.qunt as qunt from record inner join products on products.p_id=record.p_id where record.id=%s",[id])
+	temp2=cur.fetchall()
+	cur.close()
+	return render_template("bill_detail.html",c_d=temp1,data=temp2)
+
 
 @app.route('/about_us')
 def about_us():
